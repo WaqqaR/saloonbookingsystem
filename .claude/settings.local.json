@@ -94,7 +94,9 @@
       "PowerShell(vercel inspect *)",
       "Bash(vercel deploy *)",
       "Bash(Select-Object -Last 10)",
-      "PowerShell(vercel ls *)"
+      "PowerShell(vercel ls *)",
+      "PowerShell($env:DATABASE_URL = 'postgresql://neondb_owner:npg_kMUvsirn36bz@ep-young-math-abomcx7u.eu-west-2.aws.neon.tech/neondb?sslmode=require'; npx prisma db push 2>&1 | Select-Object -Last 15)",
+      "PowerShell($env:DATABASE_URL = 'postgresql://neondb_owner:npg_kMUvsirn36bz@ep-young-math-abomcx7u.eu-west-2.aws.neon.tech/neondb?sslmode=require'; npx prisma db push 2>&1 | Out-String)"
     ]
   }
 }

@@ -15,7 +15,7 @@ export default async function ServicesAdmin({ params }: { params: Promise<{ slug
       <Card>
         <CardHeader><CardTitle>Manage services</CardTitle></CardHeader>
         <CardContent>
-          <ServicesManager initial={services} currency={tenant.currency} />
+          <ServicesManager initial={services} currency={tenant.currency} businessType={tenant.businessType} />
         </CardContent>
       </Card>
     </div>

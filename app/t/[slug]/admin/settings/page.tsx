@@ -25,6 +25,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ slug:
               phone: tenant.phone || "",
               timezone: tenant.timezone,
               currency: tenant.currency,
+              businessType: tenant.businessType || "",
               cancellationWindowHours: tenant.cancellationWindowHours,
               noShowFeePercent: tenant.noShowFeePercent,
               emailRemindersEnabled: tenant.emailRemindersEnabled,

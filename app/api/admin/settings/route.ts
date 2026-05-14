@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { isBusinessType } from "@/lib/treatments";
 
 export async function PUT(req: NextRequest) {
   const session = await getSession();
@@ -14,6 +15,7 @@ export async function PUT(req: NextRequest) {
       phone: data.phone || null,
       timezone: data.timezone || "Europe/London",
       currency: (data.currency || "GBP").toUpperCase(),
+      businessType: isBusinessType(data.businessType) ? data.businessType : null,
       cancellationWindowHours: Math.max(0, Math.min(168, Number(data.cancellationWindowHours ?? 24))),
       noShowFeePercent: Math.max(0, Math.min(100, Number(data.noShowFeePercent ?? 100))),
       emailRemindersEnabled: Boolean(data.emailRemindersEnabled),

@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Sparkles } from "lucide-react";
 import { formatPrice, formatDuration } from "@/lib/utils";
+import { TREATMENT_SUGGESTIONS, type BusinessType, type TreatmentSuggestion } from "@/lib/treatments";
 
 type Service = {
   id: string;
@@ -25,11 +26,22 @@ type Service = {
 
 const empty: Partial<Service> = { name: "", description: "", durationMinutes: 30, priceCents: 2500, category: "", active: true, paymentMode: "none", depositCents: 0 };
 
-export function ServicesManager({ initial, currency }: { initial: Service[]; currency: string }) {
+export function ServicesManager({ initial, currency, businessType }: { initial: Service[]; currency: string; businessType: string | null }) {
   const [items, setItems] = useState(initial);
   const [editing, setEditing] = useState<Partial<Service> | null>(null);
   const [open, setOpen] = useState(false);
   const router = useRouter();
+
+  const suggestions: TreatmentSuggestion[] =
+    businessType && businessType in TREATMENT_SUGGESTIONS
+      ? TREATMENT_SUGGESTIONS[businessType as BusinessType]
+      : [];
+  const existingNames = new Set(items.map((s) => s.name.toLowerCase()));
+  const unusedSuggestions = suggestions.filter((s) => !existingNames.has(s.name.toLowerCase()));
+
+  function applySuggestion(t: TreatmentSuggestion) {
+    setEditing({ ...empty, name: t.name, durationMinutes: t.durationMinutes, priceCents: t.priceCents, category: t.category });
+  }
 
   async function save() {
     if (!editing) return;
@@ -56,6 +68,34 @@ export function ServicesManager({ initial, currency }: { initial: Service[]; cur
 
   return (
     <div>
+      {unusedSuggestions.length > 0 && (
+        <div className="mb-5 p-4 bg-accent/5 border border-accent/20 rounded-md">
+          <div className="flex items-center gap-2 mb-3 text-sm font-medium">
+            <Sparkles className="w-4 h-4 text-accent" />
+            Suggested treatments — click to add
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {unusedSuggestions.map((t) => (
+              <button
+                key={t.name}
+                type="button"
+                onClick={() => { applySuggestion(t); setOpen(true); }}
+                className="text-xs px-3 py-1.5 rounded-full border border-border bg-card hover:border-accent hover:bg-accent/10 transition-colors"
+              >
+                {t.name}
+                <span className="text-muted-foreground ml-2">
+                  {formatDuration(t.durationMinutes)} · {formatPrice(t.priceCents, currency)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {!businessType && (
+        <p className="mb-4 text-xs text-muted-foreground">
+          Set your business type in <a className="underline" href="../settings">Settings</a> to get treatment suggestions.
+        </p>
+      )}
       <div className="flex justify-end mb-4">
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
           <DialogTrigger asChild>

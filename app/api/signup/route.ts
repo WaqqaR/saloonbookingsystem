@@ -5,10 +5,12 @@ import { createSession, hashPassword, isValidSlug } from "@/lib/auth";
 import { getStripe, stripeEnabled } from "@/lib/stripe";
 import { tenantUrl, appUrl } from "@/lib/tenant";
 import { addDays } from "date-fns";
+import { BUSINESS_TYPES } from "@/lib/treatments";
 
 const schema = z.object({
   shopName: z.string().min(2).max(80),
   slug: z.string().min(3).max(32),
+  businessType: z.enum(BUSINESS_TYPES.map((b) => b.value) as [string, ...string[]]).optional(),
   email: z.string().email(),
   password: z.string().min(8).max(128),
 });
@@ -19,7 +21,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
-  const { shopName, slug, email, password } = parsed.data;
+  const { shopName, slug, businessType, email, password } = parsed.data;
 
   if (!isValidSlug(slug)) {
     return NextResponse.json({ error: "Invalid or reserved subdomain" }, { status: 400 });
@@ -38,6 +40,7 @@ export async function POST(req: NextRequest) {
     data: {
       slug,
       name: shopName,
+      businessType: businessType ?? null,
       email: email.toLowerCase(),
       subscriptionStatus: "trialing",
       seatCount: 1,
@@ -45,12 +48,6 @@ export async function POST(req: NextRequest) {
       users: { create: { email: email.toLowerCase(), passwordHash, role: "owner", name: shopName } },
       businessHours: {
         create: defaultHours(),
-      },
-      services: {
-        create: [
-          { name: "Men's Haircut", durationMinutes: 30, priceCents: 2500, category: "Hair", sortOrder: 1 },
-          { name: "Beard Trim", durationMinutes: 20, priceCents: 1500, category: "Grooming", sortOrder: 2 },
-        ],
       },
     },
     include: { users: true },

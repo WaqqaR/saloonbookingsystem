@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Check, Loader2, X } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
+import { BUSINESS_TYPES, type BusinessType } from "@/lib/treatments";
 
 function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 32);
@@ -18,6 +19,7 @@ export default function SignupPage() {
   const [shopName, setShopName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
+  const [businessType, setBusinessType] = useState<BusinessType>("barbershop");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [slugStatus, setSlugStatus] = useState<"idle" | "checking" | "ok" | "taken" | "invalid">("idle");
@@ -50,7 +52,7 @@ export default function SignupPage() {
     const res = await fetch("/api/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ shopName, slug, email, password }),
+      body: JSON.stringify({ shopName, slug, businessType, email, password }),
     });
     const data = await res.json();
     setLoading(false);
@@ -89,6 +91,19 @@ export default function SignupPage() {
               <div>
                 <Label>Shop name</Label>
                 <Input value={shopName} onChange={(e) => setShopName(e.target.value)} placeholder="Acme Cuts" required autoFocus />
+              </div>
+              <div>
+                <Label>What kind of business?</Label>
+                <select
+                  value={businessType}
+                  onChange={(e) => setBusinessType(e.target.value as BusinessType)}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  {BUSINESS_TYPES.map((b) => (
+                    <option key={b.value} value={b.value}>{b.label}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">We'll suggest common treatments based on this.</p>
               </div>
               <div>
                 <Label>Your booking URL</Label>

@@ -15,6 +15,7 @@ model Tenant {
   phone         String?
   timezone      String    @default("Europe/London")
   currency      String    @default("GBP")
+  businessType  String?   // barbershop, hair_salon, nail_salon, spa, beauty_salon, other
 
   // Stripe (platform subscription — owner pays us)
   stripeCustomerId      String?  @unique
