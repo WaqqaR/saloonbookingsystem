@@ -39,9 +39,37 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
   const existingNames = new Set(items.map((s) => s.name.toLowerCase()));
   const unusedSuggestions = suggestions.filter((s) => !existingNames.has(s.name.toLowerCase()));
 
+  const [nameFocused, setNameFocused] = useState(false);
+
   function applySuggestion(t: TreatmentSuggestion) {
-    setEditing({ ...empty, name: t.name, durationMinutes: t.durationMinutes, priceCents: t.priceCents, category: t.category });
+    setEditing({
+      ...empty,
+      name: t.name,
+      description: t.description,
+      durationMinutes: t.durationMinutes,
+      priceCents: t.priceCents,
+      category: t.category,
+    });
   }
+
+  function fillFromSuggestion(t: TreatmentSuggestion) {
+    setEditing((cur) => ({
+      ...(cur ?? empty),
+      name: t.name,
+      description: t.description,
+      durationMinutes: t.durationMinutes,
+      priceCents: t.priceCents,
+      category: t.category,
+    }));
+    setNameFocused(false);
+  }
+
+  const matchingSuggestions = (() => {
+    if (!nameFocused || editing?.id || suggestions.length === 0) return [];
+    const q = (editing?.name || "").toLowerCase().trim();
+    if (!q) return suggestions.slice(0, 8);
+    return suggestions.filter((t) => t.name.toLowerCase().includes(q)).slice(0, 6);
+  })();
 
   async function save() {
     if (!editing) return;
@@ -105,7 +133,32 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
             <DialogHeader><DialogTitle>{editing?.id ? "Edit service" : "New service"}</DialogTitle></DialogHeader>
             {editing && (
               <div className="space-y-3">
-                <div><Label>Name</Label><Input value={editing.name || ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></div>
+                <div className="relative">
+                  <Label>Name</Label>
+                  <Input
+                    value={editing.name || ""}
+                    onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                    onFocus={() => setNameFocused(true)}
+                    onBlur={() => setTimeout(() => setNameFocused(false), 150)}
+                    autoComplete="off"
+                  />
+                  {matchingSuggestions.length > 0 && (
+                    <div className="absolute z-50 left-0 right-0 mt-1 max-h-64 overflow-auto rounded-md border border-border bg-card shadow-lg">
+                      {matchingSuggestions.map((t) => (
+                        <button
+                          key={t.name}
+                          type="button"
+                          onMouseDown={(e) => { e.preventDefault(); fillFromSuggestion(t); }}
+                          className="w-full text-left px-3 py-2 hover:bg-accent/10 border-b last:border-b-0 border-border/40"
+                        >
+                          <div className="text-sm font-medium">{t.name}</div>
+                          <div className="text-xs text-muted-foreground line-clamp-1">{t.description}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">{formatDuration(t.durationMinutes)} · {formatPrice(t.priceCents, currency)} · {t.category}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div><Label>Description</Label><Textarea value={editing.description || ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} /></div>
                 <div className="grid grid-cols-3 gap-3">
                   <div><Label>Duration (min)</Label><Input type="number" value={editing.durationMinutes || 0} onChange={(e) => setEditing({ ...editing, durationMinutes: Number(e.target.value) })} /></div>
