@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  name          String
+  email         String
+  phone         String?
+  timezone      String    @default("Europe/London")
+  currency      String    @default("GBP")
+
+  // Stripe (platform subscription — owner pays us)
+  stripeCustomerId      String?  @unique
+  stripeSubscriptionId  String?  @unique
+  stripePriceId         String?
+  subscriptionStatus    String   @default("trialing") // trialing, active, past_due, canceled, incomplete
+  seatCount             Int      @default(1)
+  trialEndsAt           DateTime?
+
+  // Stripe Connect (customer payments — shop receives money)
+  stripeConnectAccountId       String?  @unique
+  stripeConnectChargesEnabled  Boolean  @default(false)
+  stripeConnectPayoutsEnabled  Boolean  @default(false)
+
+  // Booking policies
+  cancellationWindowHours  Int      @default(24)   // hours before appointment customers can cancel
+  noShowFeePercent         Int      @default(100)  // percent of price (or deposit) charged on no-show, 0-100
+
+  // Reminder configuration
+  emailRemindersEnabled    Boolean  @default(true)
+  smsRemindersEnabled      Boolean  @default(false)
+  reminderHoursBefore      Int      @default(24)   // hours before appointment to send reminder
+
+  users         User[]
+  staff         Staff[]
+  services      Service[]
+  products      Product[]
+  bookings      Booking[]
+  customers     Customer[]
+  businessHours BusinessHours[]
+  blockedTimes  BlockedTime[]
+  settings      Setting[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model User {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email        String
+  passwordHash String
+  name         String?
+  role         String   @default("owner") // owner, manager, staff
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([tenantId, email])
+}
+
+model Staff {
+  id          String    @id @default(cuid())
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  email       String?
+  phone       String?
+  bio         String?
+  active      Boolean   @default(true)
+  color       String?   // calendar color
+  sortOrder   Int       @default(0)
+
+  bookings    Booking[]
+  workingHours StaffHours[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([tenantId])
+}
+
+model StaffHours {
+  id         String  @id @default(cuid())
+  staffId    String
+  staff      Staff   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int
+  open       Boolean @default(true)
+  openTime   String
+  closeTime  String
+
+  @@unique([staffId, dayOfWeek])
+}
+
+model Service {
+  id              String    @id @default(cuid())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  durationMinutes Int
+  priceCents      Int
+  category        String?
+  active          Boolean   @default(true)
+  sortOrder       Int       @default(0)
+
+  // Customer payment at booking
+  paymentMode     String    @default("none")   // "none" | "deposit" | "full"
+  depositCents    Int       @default(0)         // only used when paymentMode = "deposit"
+
+  bookings        Booking[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tenantId])
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  priceCents  Int
+  stock       Int      @default(0)
+  category    String?
+  imageUrl    String?
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  email       String
+  phone       String?
+  notes       String?
+  bookings    Booking[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  tenantId      String
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  serviceId     String
+  service       Service       @relation(fields: [serviceId], references: [id])
+  staffId       String?
+  staff         Staff?        @relation(fields: [staffId], references: [id])
+  customerId    String?
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  customerName  String
+  customerEmail String
+  customerPhone String
+  notes         String?
+  startTime     DateTime
+  endTime       DateTime
+  status        String        @default("confirmed") // pending, confirmed, cancelled, completed, no_show
+  priceCents    Int
+  reminderSent  Boolean       @default(false)       // email reminder
+  smsReminderSent Boolean     @default(false)
+
+  // Customer payment
+  paymentStatus       String   @default("none")  // none, pending, paid, refunded, failed
+  amountDueCents      Int      @default(0)        // what the customer owes at booking time
+  amountPaidCents     Int      @default(0)
+  stripeCheckoutId    String?  @unique
+  stripePaymentIntent String?
+  expiresAt           DateTime?                   // pending bookings auto-expire
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([tenantId, startTime])
+  @@index([status])
+}
+
+model BusinessHours {
+  id         String  @id @default(cuid())
+  tenantId   String
+  tenant     Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int
+  open       Boolean @default(true)
+  openTime   String
+  closeTime  String
+
+  @@unique([tenantId, dayOfWeek])
+}
+
+model BlockedTime {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staffId   String?  // null = whole shop blocked
+  startTime DateTime
+  endTime   DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, startTime])
+}
+
+model Setting {
+  id        String @id @default(cuid())
+  tenantId  String
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key       String
+  value     String
+
+  @@unique([tenantId, key])
+}
