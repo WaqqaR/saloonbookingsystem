@@ -67,7 +67,7 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
   const matchingSuggestions = (() => {
     if (!nameFocused || editing?.id || suggestions.length === 0) return [];
     const q = (editing?.name || "").toLowerCase().trim();
-    if (!q) return suggestions.slice(0, 8);
+    if (!q) return [];
     return suggestions.filter((t) => t.name.toLowerCase().includes(q)).slice(0, 6);
   })();
 
@@ -152,7 +152,7 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
                           className="w-full text-left px-3 py-2 hover:bg-accent/10 border-b last:border-b-0 border-border/40"
                         >
                           <div className="text-sm font-medium">{t.name}</div>
-                          <div className="text-xs text-muted-foreground line-clamp-1">{t.description}</div>
+                          <div className="text-xs text-muted-foreground line-clamp-2">{t.description}</div>
                           <div className="text-xs text-muted-foreground mt-0.5">{formatDuration(t.durationMinutes)} · {formatPrice(t.priceCents, currency)} · {t.category}</div>
                         </button>
                       ))}
