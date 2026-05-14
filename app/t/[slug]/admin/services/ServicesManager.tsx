@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,11 +26,42 @@ type Service = {
 
 const empty: Partial<Service> = { name: "", description: "", durationMinutes: 30, priceCents: 2500, category: "", active: true, paymentMode: "none", depositCents: 0 };
 
+function currencySymbolOf(code: string) {
+  if (code === "GBP") return "£";
+  if (code === "EUR") return "€";
+  if (code === "USD") return "$";
+  return code;
+}
+
 export function ServicesManager({ initial, currency, businessType }: { initial: Service[]; currency: string; businessType: string | null }) {
   const [items, setItems] = useState(initial);
   const [editing, setEditing] = useState<Partial<Service> | null>(null);
   const [open, setOpen] = useState(false);
+  const [priceText, setPriceText] = useState("");
+  const [depositText, setDepositText] = useState("");
   const router = useRouter();
+  const currencySymbol = currencySymbolOf(currency);
+
+  // Sync display text from priceCents when editing is replaced (open dialog,
+  // suggestion picked, etc). Skip when the current text already matches so we
+  // don't clobber the user's in-progress typing (e.g. "2.5" stays "2.5", not "2.50").
+  useEffect(() => {
+    if (!editing) return;
+    const target = editing.priceCents ? (editing.priceCents / 100).toFixed(2) : "";
+    const parsed = parseFloat(priceText);
+    const currentCents = isNaN(parsed) ? 0 : Math.round(parsed * 100);
+    if (currentCents !== (editing.priceCents || 0)) setPriceText(target);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing?.priceCents]);
+
+  useEffect(() => {
+    if (!editing) return;
+    const target = editing.depositCents ? (editing.depositCents / 100).toFixed(2) : "";
+    const parsed = parseFloat(depositText);
+    const currentCents = isNaN(parsed) ? 0 : Math.round(parsed * 100);
+    if (currentCents !== (editing.depositCents || 0)) setDepositText(target);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing?.depositCents]);
 
   const suggestions: TreatmentSuggestion[] =
     businessType && businessType in TREATMENT_SUGGESTIONS
@@ -125,7 +156,7 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
         </p>
       )}
       <div className="flex justify-end mb-4">
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
+        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditing(null); setPriceText(""); setDepositText(""); } }}>
           <DialogTrigger asChild>
             <Button onClick={() => setEditing(empty)}><Plus className="w-4 h-4" /> Add service</Button>
           </DialogTrigger>
@@ -162,7 +193,28 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
                 <div><Label>Description</Label><Textarea value={editing.description || ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} /></div>
                 <div className="grid grid-cols-3 gap-3">
                   <div><Label>Duration (min)</Label><Input type="number" value={editing.durationMinutes || 0} onChange={(e) => setEditing({ ...editing, durationMinutes: Number(e.target.value) })} /></div>
-                  <div><Label>Price (pence)</Label><Input type="number" value={editing.priceCents || 0} onChange={(e) => setEditing({ ...editing, priceCents: Number(e.target.value) })} /></div>
+                  <div>
+                    <Label>Price</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">{currencySymbol}</span>
+                      <Input
+                        className="pl-7"
+                        inputMode="decimal"
+                        value={priceText}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setPriceText(v);
+                          const pounds = parseFloat(v);
+                          setEditing({ ...editing, priceCents: !isNaN(pounds) && pounds >= 0 ? Math.round(pounds * 100) : 0 });
+                        }}
+                        onBlur={() => {
+                          const pounds = parseFloat(priceText);
+                          if (!isNaN(pounds) && pounds >= 0) setPriceText(pounds.toFixed(2));
+                        }}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
                   <div><Label>Category</Label><Input value={editing.category || ""} onChange={(e) => setEditing({ ...editing, category: e.target.value })} /></div>
                 </div>
                 <div className="border-t pt-3">
@@ -181,8 +233,26 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
                   </div>
                   {editing.paymentMode === "deposit" && (
                     <div className="mt-3">
-                      <Label>Deposit amount (pence)</Label>
-                      <Input type="number" value={editing.depositCents || 0} onChange={(e) => setEditing({ ...editing, depositCents: Number(e.target.value) })} placeholder="e.g. 1000 for £10" />
+                      <Label>Deposit amount</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">{currencySymbol}</span>
+                        <Input
+                          className="pl-7"
+                          inputMode="decimal"
+                          value={depositText}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setDepositText(v);
+                            const pounds = parseFloat(v);
+                            setEditing({ ...editing, depositCents: !isNaN(pounds) && pounds >= 0 ? Math.round(pounds * 100) : 0 });
+                          }}
+                          onBlur={() => {
+                            const pounds = parseFloat(depositText);
+                            if (!isNaN(pounds) && pounds >= 0) setDepositText(pounds.toFixed(2));
+                          }}
+                          placeholder="0.00"
+                        />
+                      </div>
                     </div>
                   )}
                   <p className="text-xs text-muted-foreground mt-2">Requires Stripe Connect to be set up.</p>
