@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSession, verifyCredentials } from "@/lib/auth";
-import { createHandoffToken } from "@/lib/handoff";
 import { tenantUrl } from "@/lib/tenant";
 
 export async function POST(req: NextRequest) {
@@ -10,17 +9,13 @@ export async function POST(req: NextRequest) {
   const user = await verifyCredentials(email, password);
   if (!user) return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
 
-  const sessionPayload = {
+  await createSession({
     userId: user.id,
     tenantId: user.tenant.id,
     tenantSlug: user.tenant.slug,
     role: user.role,
     email: user.email,
-  };
-  await createSession(sessionPayload);
-  const handoff = await createHandoffToken(sessionPayload);
-
-  return NextResponse.json({
-    redirect: tenantUrl(user.tenant.slug, `/api/session/handoff?t=${handoff}&to=${encodeURIComponent("/admin")}`),
   });
+
+  return NextResponse.json({ redirect: tenantUrl(user.tenant.slug, "/admin") });
 }

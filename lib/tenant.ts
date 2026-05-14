@@ -42,6 +42,8 @@ export function tenantUrl(slug: string, path = "/", opts?: { app?: boolean }) {
   const base = process.env.APP_BASE_DOMAIN || "lvh.me:3000";
   const proto = process.env.APP_PROTOCOL || "http";
   if (opts?.app) return `${proto}://${base}${path}`;
+  // /api/* routes live at the app root, not under /t/<slug>/.
+  if (path.startsWith("/api/")) return `${proto}://${base}${path}`;
   const tenantPath = path === "/" ? "" : path;
   return `${proto}://${base}/t/${slug}${tenantPath}`;
 }

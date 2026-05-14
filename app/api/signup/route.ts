@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { createSession, hashPassword, isValidSlug } from "@/lib/auth";
-import { createHandoffToken } from "@/lib/handoff";
 import { getStripe, stripeEnabled } from "@/lib/stripe";
 import { tenantUrl, appUrl } from "@/lib/tenant";
 import { addDays } from "date-fns";
@@ -67,7 +66,6 @@ export async function POST(req: NextRequest) {
   };
 
   await createSession(sessionPayload);
-  const handoff = await createHandoffToken(sessionPayload);
 
   // If Stripe is configured, create a customer and a Checkout session for the subscription.
   if (stripeEnabled()) {
@@ -95,9 +93,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ checkoutUrl: session.url });
   }
 
-  // Browsers don't share cookies between localhost and *.localhost,
-  // so hand off the session via a short-lived token URL.
-  const adminUrl = tenantUrl(slug, `/api/session/handoff?t=${handoff}&to=${encodeURIComponent("/admin?welcome=1")}`);
+  const adminUrl = tenantUrl(slug, "/admin?welcome=1");
   return NextResponse.json({ adminUrl });
 }
 
