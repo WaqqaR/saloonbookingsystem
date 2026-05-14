@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import { cn } from "@/lib/utils";
 
 type Size = "sm" | "md" | "lg" | "xl";

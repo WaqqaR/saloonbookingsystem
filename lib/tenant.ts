@@ -41,8 +41,9 @@ export async function isMarketingHost() {
 export function tenantUrl(slug: string, path = "/", opts?: { app?: boolean }) {
   const base = process.env.APP_BASE_DOMAIN || "lvh.me:3000";
   const proto = process.env.APP_PROTOCOL || "http";
-  const sub = opts?.app ? "app" : slug;
-  return `${proto}://${sub}.${base}${path}`;
+  if (opts?.app) return `${proto}://${base}${path}`;
+  const tenantPath = path === "/" ? "" : path;
+  return `${proto}://${base}/t/${slug}${tenantPath}`;
 }
 
 export function appUrl(path = "/") {
