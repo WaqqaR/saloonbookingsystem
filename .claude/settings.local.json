@@ -79,7 +79,22 @@
       "PowerShell($schema = \\(Get-Item 'D:\\\\Projects\\\\SalonBookingSystem\\\\prisma\\\\schema.prisma'\\).LastWriteTime; $db = \\(Get-Item 'D:\\\\Projects\\\\SalonBookingSystem\\\\prisma\\\\dev.db'\\).LastWriteTime; \"schema: $schema\"; \"db:     $db\"; if \\($db -lt $schema\\) { 'DB is older than schema -> db push needed' } else { 'DB is newer than schema -> likely pushed' })",
       "PowerShell(node -e \"console.log\\('AUTH_SECRET=' + require\\('crypto'\\).randomBytes\\(48\\).toString\\('base64'\\)\\); console.log\\('CRON_SECRET=' + require\\('crypto'\\).randomBytes\\(32\\).toString\\('base64url'\\)\\)\")",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git branch *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "PowerShell(vercel whoami *)",
+      "PowerShell(Test-Path 'D:\\\\Projects\\\\SalonBookingSystem\\\\.vercel\\\\project.json'; Get-Content 'D:\\\\Projects\\\\SalonBookingSystem\\\\.vercel\\\\project.json' -ErrorAction SilentlyContinue; '---'; if \\(Test-Path 'D:\\\\Projects\\\\SalonBookingSystem\\\\.env.local'\\) { Get-Content 'D:\\\\Projects\\\\SalonBookingSystem\\\\.env.local' | ForEach-Object { if \\($_ -match '=\\(.+\\)$'\\) { \\($_ -split '=', 2\\)[0] + '=<set>' } else { $_ } } } else { '.env.local not found' })",
+      "PowerShell(vercel env *)",
+      "PowerShell($line = Select-String -Path 'D:\\\\Projects\\\\SalonBookingSystem\\\\.env.production.local' -Pattern '^DATABASE_URL=' | Select-Object -First 1; $env:DATABASE_URL = \\(\\($line.Line -split '=', 2\\)[1] -replace '^\"|\"$','' \\); 'DATABASE_URL host: ' + \\([Uri]$env:DATABASE_URL\\).Host; npx prisma db push 2>&1 | Select-Object -Last 30)",
+      "PowerShell($line = Get-Content 'D:\\\\Projects\\\\SalonBookingSystem\\\\.env.production.local' | Where-Object { $_ -match '^DATABASE_URL=' }; 'Raw line bytes:'; [System.Text.Encoding]::UTF8.GetBytes\\($line\\) -join ',' | ForEach-Object { $_.Substring\\(0, [Math]::Min\\(100, $_.Length\\)\\) }; 'As string:'; '[' + $line + ']')",
+      "PowerShell($env:DATABASE_URL = 'postgresql://neondb_owner:npg_kMUvsirn36bz@ep-young-math-abomcx7u.eu-west-2.aws.neon.tech/neondb?sslmode=require'; npx prisma db push 2>&1 | Select-Object -Last 25)",
+      "PowerShell(vercel deploy *)",
+      "PowerShell(vercel inspect *)",
+      "Bash(vercel deploy *)",
+      "Bash(Select-Object -Last 10)",
+      "PowerShell(vercel ls *)"
     ]
   }
 }

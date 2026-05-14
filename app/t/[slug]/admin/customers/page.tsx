@@ -39,7 +39,7 @@ export default async function CustomersAdmin({ params }: { params: Promise<{ slu
                     </td>
                     <td className="p-3"><Badge variant="secondary">{c._count.bookings}</Badge></td>
                     <td className="p-3 text-right">
-                      <Link className="text-sm text-primary underline" href={`/admin/customers/${c.id}`}>View</Link>
+                      <Link className="text-sm text-primary underline" href={`/t/${slug}/admin/customers/${c.id}`}>View</Link>
                     </td>
                   </tr>
                 ))}

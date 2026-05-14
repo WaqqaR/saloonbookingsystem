@@ -43,19 +43,19 @@ export default async function TenantAdminLayout({
           </div>
         </div>
         <nav className="flex-1 p-2 text-sm space-y-1">
-          <NavLink href={`/admin`} icon={<LayoutDashboard className="w-4 h-4" />}>Dashboard</NavLink>
-          <NavLink href={`/admin/calendar`} icon={<Calendar className="w-4 h-4" />}>Diary</NavLink>
-          <NavLink href={`/admin/bookings`} icon={<Calendar className="w-4 h-4" />}>Bookings</NavLink>
-          <NavLink href={`/admin/customers`} icon={<UserCircle className="w-4 h-4" />}>Customers</NavLink>
-          <NavLink href={`/admin/services`} icon={<Scissors className="w-4 h-4" />}>Services</NavLink>
-          <NavLink href={`/admin/products`} icon={<Package className="w-4 h-4" />}>Products</NavLink>
-          <NavLink href={`/admin/staff`} icon={<Users className="w-4 h-4" />}>Staff</NavLink>
-          <NavLink href={`/admin/availability`} icon={<Clock className="w-4 h-4" />}>Hours & Blocks</NavLink>
-          <NavLink href={`/admin/reports`} icon={<TrendingUp className="w-4 h-4" />}>Reports</NavLink>
-          <NavLink href={`/admin/settings`} icon={<Settings className="w-4 h-4" />}>Settings</NavLink>
-          <NavLink href={`/admin/embed`} icon={<Code className="w-4 h-4" />}>Embed</NavLink>
-          <NavLink href={`/admin/payments`} icon={<CreditCard className="w-4 h-4" />}>Customer payments</NavLink>
-          <NavLink href={`/admin/billing`} icon={<CreditCard className="w-4 h-4" />}>Subscription</NavLink>
+          <NavLink href={`/t/${slug}/admin`} icon={<LayoutDashboard className="w-4 h-4" />}>Dashboard</NavLink>
+          <NavLink href={`/t/${slug}/admin/calendar`} icon={<Calendar className="w-4 h-4" />}>Diary</NavLink>
+          <NavLink href={`/t/${slug}/admin/bookings`} icon={<Calendar className="w-4 h-4" />}>Bookings</NavLink>
+          <NavLink href={`/t/${slug}/admin/customers`} icon={<UserCircle className="w-4 h-4" />}>Customers</NavLink>
+          <NavLink href={`/t/${slug}/admin/services`} icon={<Scissors className="w-4 h-4" />}>Services</NavLink>
+          <NavLink href={`/t/${slug}/admin/products`} icon={<Package className="w-4 h-4" />}>Products</NavLink>
+          <NavLink href={`/t/${slug}/admin/staff`} icon={<Users className="w-4 h-4" />}>Staff</NavLink>
+          <NavLink href={`/t/${slug}/admin/availability`} icon={<Clock className="w-4 h-4" />}>Hours & Blocks</NavLink>
+          <NavLink href={`/t/${slug}/admin/reports`} icon={<TrendingUp className="w-4 h-4" />}>Reports</NavLink>
+          <NavLink href={`/t/${slug}/admin/settings`} icon={<Settings className="w-4 h-4" />}>Settings</NavLink>
+          <NavLink href={`/t/${slug}/admin/embed`} icon={<Code className="w-4 h-4" />}>Embed</NavLink>
+          <NavLink href={`/t/${slug}/admin/payments`} icon={<CreditCard className="w-4 h-4" />}>Customer payments</NavLink>
+          <NavLink href={`/t/${slug}/admin/billing`} icon={<CreditCard className="w-4 h-4" />}>Subscription</NavLink>
         </nav>
         <form action="/api/logout" method="post" className="p-2 border-t">
           <button className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-secondary">
@@ -67,13 +67,13 @@ export default async function TenantAdminLayout({
         {trialing && (
           <div className="p-3 bg-amber-50 border-b border-amber-200 text-amber-900 text-sm flex items-center justify-between">
             <span>You&apos;re on a free trial{sub.trialEndsAt ? ` until ${new Date(sub.trialEndsAt).toLocaleDateString()}` : ""}.</span>
-            <Link href={`/admin/billing`} className="underline font-medium">Add payment method</Link>
+            <Link href={`/t/${slug}/admin/billing`} className="underline font-medium">Add payment method</Link>
           </div>
         )}
         {past_due && (
           <div className="p-3 bg-red-50 border-b border-red-200 text-red-900 text-sm flex items-center justify-between">
             <span>Your subscription is past due. Bookings are paused.</span>
-            <Link href={`/admin/billing`} className="underline font-medium">Update payment</Link>
+            <Link href={`/t/${slug}/admin/billing`} className="underline font-medium">Update payment</Link>
           </div>
         )}
         {children}

@@ -14,3 +14,6 @@ prisma/dev.db-journal
 .DS_Store
 .vercel
 next-env.d.ts
+
+.vercel
+.env*.local

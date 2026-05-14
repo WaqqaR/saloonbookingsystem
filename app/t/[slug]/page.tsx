@@ -32,7 +32,7 @@ export default async function TenantHome({ params }: { params: Promise<{ slug: s
           <div className="flex items-center gap-2 font-display text-xl font-semibold">
             <span className="tracking-wide">{tenant.name}</span>
           </div>
-          <Link href={`/book`}><Button>Book appointment</Button></Link>
+          <Link href={`/t/${slug}/book`}><Button>Book appointment</Button></Link>
         </div>
       </header>
 
@@ -48,7 +48,7 @@ export default async function TenantHome({ params }: { params: Promise<{ slug: s
           <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto leading-relaxed">
             Skilled hands. Honest pricing. Book your next appointment online in under a minute.
           </p>
-          <Link href={`/book`}>
+          <Link href={`/t/${slug}/book`}>
             <Button size="lg" className="text-base px-7">
               <Calendar className="w-4 h-4" /> Book your appointment
             </Button>
@@ -148,7 +148,7 @@ export default async function TenantHome({ params }: { params: Promise<{ slug: s
             ))}
           </ul>
           <div className="mt-8 text-center">
-            <Link href={`/book`}><Button variant="secondary">Book now</Button></Link>
+            <Link href={`/t/${slug}/book`}><Button variant="secondary">Book now</Button></Link>
           </div>
         </div>
       </section>

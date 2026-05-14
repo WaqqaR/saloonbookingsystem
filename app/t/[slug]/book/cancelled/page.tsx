@@ -6,7 +6,7 @@ import { X } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function BookingCancelled({ params }: { params: Promise<{ slug: string }> }) {
-  await params;
+  const { slug } = await params;
   return (
     <div className="min-h-screen bg-background grid place-items-center p-6">
       <Card className="max-w-md w-full">
@@ -20,7 +20,7 @@ export default async function BookingCancelled({ params }: { params: Promise<{ s
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Link href="/book"><Button className="w-full">Try again</Button></Link>
+          <Link href={`/t/${slug}/book`}><Button className="w-full">Try again</Button></Link>
         </CardContent>
       </Card>
     </div>

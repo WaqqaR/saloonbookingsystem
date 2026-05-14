@@ -27,7 +27,7 @@ export default async function CustomerDetail({ params }: { params: Promise<{ slu
 
   return (
     <div className="p-6 max-w-3xl space-y-6">
-      <Link href={`/admin/customers`}><Button variant="ghost" size="sm"><ChevronLeft className="w-4 h-4" /> Back</Button></Link>
+      <Link href={`/t/${slug}/admin/customers`}><Button variant="ghost" size="sm"><ChevronLeft className="w-4 h-4" /> Back</Button></Link>
       <Card>
         <CardHeader>
           <CardTitle>{customer.name}</CardTitle>
