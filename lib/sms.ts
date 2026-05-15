@@ -1,4 +1,6 @@
 import { format } from "date-fns";
+import { createBookingManageToken } from "./booking-tokens";
+import { tenantUrl } from "./tenant";
 
 let _client: any | null | undefined;
 
@@ -19,44 +21,43 @@ export function smsEnabled() {
 }
 
 type BookingForSms = {
+  id: string;
   customerName: string;
   customerPhone: string;
   startTime: Date;
   service: { name: string };
   staff: { name: string } | null;
-  tenant: { name: string };
+  tenant: { name: string; slug: string };
 };
+
+async function manageLink(b: BookingForSms): Promise<string> {
+  const token = await createBookingManageToken(b.id);
+  return tenantUrl(b.tenant.slug, `/manage?t=${encodeURIComponent(token)}`);
+}
 
 export async function sendBookingReminderSms(b: BookingForSms) {
   const when = format(b.startTime, "EEE MMM d 'at' h:mm a");
-  const body = `Hi ${b.customerName.split(" ")[0]}, reminder of your ${b.service.name} appointment at ${b.tenant.name}${b.staff ? ` with ${b.staff.name}` : ""} on ${when}. See you soon!`;
-
-  const client = await getClient();
-  if (!client) {
-    console.log(`[sms-stub] Would send -> ${b.customerPhone}: ${body}`);
-    return { sent: false, stubbed: true };
-  }
-  const from = process.env.TWILIO_FROM_NUMBER;
-  try {
-    await client.messages.create({ to: b.customerPhone, from, body });
-    return { sent: true };
-  } catch (e: any) {
-    console.error("SMS failed:", e.message);
-    return { sent: false, error: e.message };
-  }
+  const link = await manageLink(b);
+  const body = `Hi ${b.customerName.split(" ")[0]}, reminder of your ${b.service.name} appointment at ${b.tenant.name}${b.staff ? ` with ${b.staff.name}` : ""} on ${when}. Manage: ${link}`;
+  return await send(b.customerPhone, body);
 }
 
 export async function sendBookingConfirmationSms(b: BookingForSms) {
   const when = format(b.startTime, "EEE MMM d 'at' h:mm a");
-  const body = `Booking confirmed: ${b.service.name} at ${b.tenant.name} on ${when}.`;
+  const link = await manageLink(b);
+  const body = `Booking confirmed: ${b.service.name} at ${b.tenant.name} on ${when}. Manage: ${link}`;
+  return await send(b.customerPhone, body);
+}
+
+async function send(to: string, body: string) {
   const client = await getClient();
   if (!client) {
-    console.log(`[sms-stub] Would send -> ${b.customerPhone}: ${body}`);
+    console.log(`[sms-stub] Would send -> ${to}: ${body}`);
     return { sent: false, stubbed: true };
   }
   const from = process.env.TWILIO_FROM_NUMBER;
   try {
-    await client.messages.create({ to: b.customerPhone, from, body });
+    await client.messages.create({ to, from, body });
     return { sent: true };
   } catch (e: any) {
     console.error("SMS failed:", e.message);

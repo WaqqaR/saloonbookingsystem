@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
             include: {
               service: true,
               staff: true,
-              tenant: { select: { name: true, currency: true, email: true, emailRemindersEnabled: true, smsRemindersEnabled: true } },
+              tenant: { select: { name: true, slug: true, currency: true, email: true, emailRemindersEnabled: true, smsRemindersEnabled: true } },
             },
           });
           if (booking) {
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
               sendBookingConfirmation(booking).catch((e) => console.error("Email failed:", e));
             }
             if (booking.tenant.smsRemindersEnabled) {
-              sendBookingConfirmationSms({ ...booking, tenant: { name: booking.tenant.name } })
+              sendBookingConfirmationSms({ ...booking, tenant: { name: booking.tenant.name, slug: booking.tenant.slug } })
                 .catch((e) => console.error("SMS failed:", e));
             }
           }
