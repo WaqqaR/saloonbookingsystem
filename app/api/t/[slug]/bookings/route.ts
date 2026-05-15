@@ -91,7 +91,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       amountDueCents,
       expiresAt: requiresPayment ? addMinutes(new Date(), 30) : null,
     },
-    include: { service: true, staff: true, tenant: { select: { name: true, slug: true, currency: true, email: true } } },
+    include: { service: true, staff: true, tenant: { select: { name: true, slug: true, currency: true, email: true, timezone: true, defaultLocale: true } } },
   });
 
   if (requiresPayment) {
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     sendBookingConfirmation(booking).catch((e) => console.error("Email failed:", e));
   }
   if (tenant.smsRemindersEnabled) {
-    sendBookingConfirmationSms({ ...booking, tenant: { name: booking.tenant.name, slug: booking.tenant.slug } })
+    sendBookingConfirmationSms({ ...booking, tenant: { name: booking.tenant.name, slug: booking.tenant.slug, timezone: booking.tenant.timezone, defaultLocale: booking.tenant.defaultLocale } })
       .catch((e) => console.error("SMS failed:", e));
   }
   return NextResponse.json({ booking }, { headers: cors() });

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { format, addDays, startOfToday } from "date-fns";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Check, ChevronLeft, Clock, Calendar, Loader2, User } from "lucide-react";
 import { cn, formatDuration, formatPrice } from "@/lib/utils";
+import { formatInTenantTz } from "@/lib/datetime";
 
 type Service = {
   id: string;
@@ -38,11 +40,17 @@ export function BookingFlow({
   embed = false,
   tenantSlug,
   currency = "GBP",
+  locale = "en-GB",
+  timezone = "Europe/London",
 }: {
   embed?: boolean;
   tenantSlug: string;
   currency?: string;
+  locale?: string;
+  timezone?: string;
 }) {
+  const t = useTranslations("booking");
+  const tz = { defaultLocale: locale, timezone };
   const apiBase = `/api/t/${tenantSlug}`;
   const [step, setStep] = useState<Step>("service");
   const [services, setServices] = useState<Service[]>([]);
@@ -68,8 +76,8 @@ export function BookingFlow({
       setServices(sv.services || []);
       setPolicy(sv.policy || null);
       setStaffList(st.staff || []);
-    }).catch(() => setError("Failed to load shop info"));
-  }, [apiBase]);
+    }).catch(() => setError(t("errorLoadShop")));
+  }, [apiBase, t]);
 
   useEffect(() => {
     if (!service) return;
@@ -79,9 +87,9 @@ export function BookingFlow({
     fetch(`${apiBase}/availability?serviceId=${service.id}&date=${date}${staffParam}`)
       .then((r) => r.json())
       .then((d) => setSlots(d.slots || []))
-      .catch(() => setError("Failed to load availability"))
+      .catch(() => setError(t("errorLoadAvailability")))
       .finally(() => setLoading(false));
-  }, [service, staff, anyStaff, date, apiBase]);
+  }, [service, staff, anyStaff, date, apiBase, t]);
 
   useEffect(() => {
     if (!embed || typeof window === "undefined") return;
@@ -125,7 +133,7 @@ export function BookingFlow({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Booking failed");
+      if (!res.ok) throw new Error(data.error || t("errorBooking"));
       // If payment is required, send the customer to Stripe Checkout.
       if (data.checkoutUrl) {
         if (embed && window.top) {
@@ -146,7 +154,9 @@ export function BookingFlow({
 
   const steps: Step[] = hasStaffStep ? ["service", "staff", "datetime", "details", "confirmation"] : ["service", "datetime", "details", "confirmation"];
   const stepIndex = steps.indexOf(step);
-  const labels = hasStaffStep ? ["Service", "Staff", "Date & Time", "Your details", "Done"] : ["Service", "Date & Time", "Your details", "Done"];
+  const labels = hasStaffStep
+    ? [t("stepLabelService"), t("stepLabelStaff"), t("stepLabelDateTime"), t("stepLabelDetails"), t("stepLabelDone")]
+    : [t("stepLabelService"), t("stepLabelDateTime"), t("stepLabelDetails"), t("stepLabelDone")];
 
   return (
     <div className={cn("w-full", !embed && "max-w-3xl mx-auto px-4 py-8")}>
@@ -168,7 +178,7 @@ export function BookingFlow({
 
       {step === "service" && (
         <div>
-          <h2 className="font-display text-3xl font-light mb-6">Choose a treatment</h2>
+          <h2 className="font-display text-3xl font-light mb-6">{t("chooseTreatment")}</h2>
           {Object.entries(groupByCategory(services)).map(([cat, items]) => (
             <div key={cat} className="mb-8">
               <div className="eyebrow mb-3">{cat}</div>
@@ -187,11 +197,11 @@ export function BookingFlow({
                     </div>
                     {s.paymentMode === "deposit" && (
                       <p className="text-[11px] uppercase tracking-[0.2em] text-accent mt-2">
-                        {formatPrice(s.depositCents || 0, currency)} deposit at booking
+                        {t("depositAtBooking", { amount: formatPrice(s.depositCents || 0, currency) })}
                       </p>
                     )}
                     {s.paymentMode === "full" && (
-                      <p className="text-[11px] uppercase tracking-[0.2em] text-accent mt-2">payable at booking</p>
+                      <p className="text-[11px] uppercase tracking-[0.2em] text-accent mt-2">{t("payableAtBooking")}</p>
                     )}
                   </button>
                 ))}
@@ -203,12 +213,12 @@ export function BookingFlow({
 
       {step === "staff" && service && (
         <div>
-          <Button variant="ghost" size="sm" onClick={() => setStep("service")} className="mb-4"><ChevronLeft className="w-4 h-4" /> Back</Button>
-          <h2 className="text-2xl font-semibold mb-4">Pick a staff member</h2>
+          <Button variant="ghost" size="sm" onClick={() => setStep("service")} className="mb-4"><ChevronLeft className="w-4 h-4" /> {t("back")}</Button>
+          <h2 className="text-2xl font-semibold mb-4">{t("stepStaff")}</h2>
           <div className="grid sm:grid-cols-2 gap-3">
             <button onClick={() => { setAnyStaff(true); setStaff(null); setStep("datetime"); }} className="text-left p-4 border rounded-lg hover:border-primary hover:shadow-sm transition">
-              <div className="font-medium flex items-center gap-2"><User className="w-4 h-4" /> Any available</div>
-              <p className="text-sm text-muted-foreground">Whoever is free at your chosen time.</p>
+              <div className="font-medium flex items-center gap-2"><User className="w-4 h-4" /> {t("anyAvailable")}</div>
+              <p className="text-sm text-muted-foreground">{t("anyAvailableHint")}</p>
             </button>
             {staffList.map((s) => (
               <button key={s.id} onClick={() => { setStaff(s); setAnyStaff(false); setStep("datetime"); }} className="text-left p-4 border rounded-lg hover:border-primary hover:shadow-sm transition">
@@ -224,25 +234,25 @@ export function BookingFlow({
 
       {step === "datetime" && service && (
         <div>
-          <Button variant="ghost" size="sm" onClick={() => setStep(hasStaffStep ? "staff" : "service")} className="mb-4"><ChevronLeft className="w-4 h-4" /> Back</Button>
-          <h2 className="text-2xl font-semibold mb-1">Pick a date & time</h2>
+          <Button variant="ghost" size="sm" onClick={() => setStep(hasStaffStep ? "staff" : "service")} className="mb-4"><ChevronLeft className="w-4 h-4" /> {t("back")}</Button>
+          <h2 className="text-2xl font-semibold mb-1">{t("stepDateTime")}</h2>
           <p className="text-sm text-muted-foreground mb-4">
             {service.name} · {formatDuration(service.durationMinutes)} · {formatPrice(service.priceCents, currency)}
-            {staff && ` · with ${staff.name}`}
-            {anyStaff && hasStaffStep && ` · any staff`}
+            {staff && t("withStaff", { name: staff.name })}
+            {anyStaff && hasStaffStep && t("anyStaff")}
           </p>
 
           <div className="mb-6">
-            <Label className="mb-2 block">Date</Label>
+            <Label className="mb-2 block">{t("dateLabel")}</Label>
             <div className="flex gap-2 overflow-x-auto pb-2">
               {upcomingDays.map((d) => {
                 const iso = format(d, "yyyy-MM-dd");
                 const isSelected = iso === date;
                 return (
                   <button key={iso} onClick={() => setDate(iso)} className={cn("shrink-0 flex flex-col items-center justify-center w-16 h-20 rounded-lg border", isSelected ? "border-primary bg-primary text-primary-foreground" : "hover:border-foreground")}>
-                    <span className="text-xs uppercase">{format(d, "EEE")}</span>
-                    <span className="text-xl font-semibold">{format(d, "d")}</span>
-                    <span className="text-[10px] uppercase">{format(d, "MMM")}</span>
+                    <span className="text-xs uppercase">{formatInTenantTz(d, tz, "weekdayShort")}</span>
+                    <span className="text-xl font-semibold">{formatInTenantTz(d, tz, "dayNum")}</span>
+                    <span className="text-[10px] uppercase">{formatInTenantTz(d, tz, "monthShort")}</span>
                   </button>
                 );
               })}
@@ -250,11 +260,11 @@ export function BookingFlow({
           </div>
 
           <div>
-            <Label className="mb-2 block">Available times</Label>
+            <Label className="mb-2 block">{t("availableTimes")}</Label>
             {loading ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Loading slots…</div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> {t("loadingSlots")}</div>
             ) : slots.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No slots available for this day. Try another date.</p>
+              <p className="text-sm text-muted-foreground">{t("noSlots")}</p>
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {slots.map((s) => (
@@ -267,43 +277,42 @@ export function BookingFlow({
           </div>
 
           <div className="mt-6 flex justify-end">
-            <Button disabled={!slot} onClick={() => setStep("details")}>Continue</Button>
+            <Button disabled={!slot} onClick={() => setStep("details")}>{t("continue")}</Button>
           </div>
         </div>
       )}
 
       {step === "details" && service && slot && (
         <div>
-          <Button variant="ghost" size="sm" onClick={() => setStep("datetime")} className="mb-4"><ChevronLeft className="w-4 h-4" /> Back</Button>
-          <h2 className="text-2xl font-semibold mb-4">Your details</h2>
+          <Button variant="ghost" size="sm" onClick={() => setStep("datetime")} className="mb-4"><ChevronLeft className="w-4 h-4" /> {t("back")}</Button>
+          <h2 className="text-2xl font-semibold mb-4">{t("stepDetails")}</h2>
           <div className="space-y-4 max-w-md">
-            <div><Label htmlFor="name">Full name</Label><Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Jane Doe" /></div>
-            <div><Label htmlFor="email">Email</Label><Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="jane@example.com" /></div>
-            <div><Label htmlFor="phone">Phone</Label><Input id="phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="07900 123456" /></div>
-            <div><Label htmlFor="notes">Notes (optional)</Label><Textarea id="notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Anything we should know?" /></div>
+            <div><Label htmlFor="name">{t("nameLabel")}</Label><Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("namePlaceholder")} /></div>
+            <div><Label htmlFor="email">{t("emailLabel")}</Label><Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={t("emailPlaceholder")} /></div>
+            <div><Label htmlFor="phone">{t("phoneLabel")}</Label><Input id="phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={t("phonePlaceholder")} /></div>
+            <div><Label htmlFor="notes">{t("notesLabel")}</Label><Textarea id="notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder={t("notesPlaceholder")} /></div>
           </div>
 
           <Card className="mt-6 bg-muted/30">
-            <CardHeader><CardTitle className="text-base">Booking summary</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">{t("summary")}</CardTitle></CardHeader>
             <CardContent className="space-y-1 text-sm">
-              <div><span className="text-muted-foreground">Service:</span> {service.name}</div>
-              {staff && <div><span className="text-muted-foreground">Staff:</span> {staff.name}</div>}
-              <div className="flex items-center gap-1"><Calendar className="w-3 h-3 text-muted-foreground" /> {format(new Date(slot.start), "EEEE, MMMM d, yyyy")} at {slot.label}</div>
-              <div><span className="text-muted-foreground">Duration:</span> {formatDuration(service.durationMinutes)}</div>
-              <div><span className="text-muted-foreground">Total:</span> <span className="font-semibold">{formatPrice(service.priceCents, currency)}</span></div>
+              <div><span className="text-muted-foreground">{t("summaryService")}:</span> {service.name}</div>
+              {staff && <div><span className="text-muted-foreground">{t("summaryStaff")}:</span> {staff.name}</div>}
+              <div className="flex items-center gap-1"><Calendar className="w-3 h-3 text-muted-foreground" /> {formatInTenantTz(slot.start, tz, "dateLong")} {t("atTime", { time: slot.label })}</div>
+              <div><span className="text-muted-foreground">{t("summaryDuration")}:</span> {formatDuration(service.durationMinutes)}</div>
+              <div><span className="text-muted-foreground">{t("summaryTotal")}:</span> <span className="font-semibold">{formatPrice(service.priceCents, currency)}</span></div>
             </CardContent>
           </Card>
 
           {policy && (
             <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
-              By confirming, you agree to our cancellation policy: please cancel at least{" "}
-              <span className="text-foreground">{policy.cancellationWindowHours} hours</span> before your appointment.
-              {policy.noShowFeePercent > 0 && " A no-show fee may apply for missed appointments."}
+              {t("policy", { hours: policy.cancellationWindowHours })}
+              {policy.noShowFeePercent > 0 && ` ${t("policyNoShow")}`}
             </p>
           )}
           <div className="mt-6 flex justify-end">
             <Button onClick={submit} disabled={submitting || !form.name || !form.email || !form.phone}>
-              {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Booking…</> : "Confirm booking"}
+              {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> {t("booking")}</> : t("confirmBooking")}
             </Button>
           </div>
         </div>
@@ -313,15 +322,15 @@ export function BookingFlow({
         <Card className="border-sage/40">
           <CardHeader>
             <div className="mb-2 mx-auto h-12 w-12 rounded-full bg-sage/15 grid place-items-center"><Check className="w-6 h-6 text-sage" /></div>
-            <CardTitle className="font-display text-2xl text-center">Booking confirmed</CardTitle>
-            <CardDescription className="text-center">We&apos;ve reserved your appointment. A confirmation will be sent to {confirmation.customerEmail}.</CardDescription>
+            <CardTitle className="font-display text-2xl text-center">{t("confirmationTitle")}</CardTitle>
+            <CardDescription className="text-center">{t("confirmationDescription", { email: confirmation.customerEmail })}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
-            <div><span className="text-muted-foreground">Service:</span> {confirmation.service.name}</div>
-            {confirmation.staff && <div><span className="text-muted-foreground">Staff:</span> {confirmation.staff.name}</div>}
-            <div><span className="text-muted-foreground">When:</span> {format(new Date(confirmation.startTime), "EEEE, MMMM d, yyyy 'at' h:mm a")}</div>
-            <div><span className="text-muted-foreground">Total:</span> {formatPrice(confirmation.priceCents, currency)}</div>
-            <div><span className="text-muted-foreground">Confirmation #:</span> {confirmation.id.slice(-8).toUpperCase()}</div>
+            <div><span className="text-muted-foreground">{t("summaryService")}:</span> {confirmation.service.name}</div>
+            {confirmation.staff && <div><span className="text-muted-foreground">{t("summaryStaff")}:</span> {confirmation.staff.name}</div>}
+            <div><span className="text-muted-foreground">{t("whenLabel")}:</span> {formatInTenantTz(confirmation.startTime, tz, "full")}</div>
+            <div><span className="text-muted-foreground">{t("summaryTotal")}:</span> {formatPrice(confirmation.priceCents, currency)}</div>
+            <div><span className="text-muted-foreground">{t("confirmationNumber")}:</span> {confirmation.id.slice(-8).toUpperCase()}</div>
           </CardContent>
         </Card>
       )}

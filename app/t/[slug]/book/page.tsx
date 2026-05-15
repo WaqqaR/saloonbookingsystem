@@ -17,7 +17,7 @@ export default async function TenantBook({ params }: { params: Promise<{ slug: s
           <Link href="/" className="font-display text-2xl tracking-wide">{tenant.name}</Link>
         </div>
       </header>
-      <BookingFlow tenantSlug={slug} currency={tenant.currency} />
+      <BookingFlow tenantSlug={slug} currency={tenant.currency} locale={tenant.defaultLocale} timezone={tenant.timezone} />
     </div>
   );
 }

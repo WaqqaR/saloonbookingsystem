@@ -12,7 +12,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const booking = await prisma.booking.findFirst({
     where: { id, tenantId: session.tenantId },
-    include: { service: true, staff: true, tenant: { select: { name: true, slug: true, currency: true, email: true } } },
+    include: { service: true, staff: true, tenant: { select: { name: true, slug: true, currency: true, email: true, timezone: true, defaultLocale: true } } },
   });
   if (!booking) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
   if (channels.includes("sms")) {
     try {
-      const r = await sendBookingReminderSms({ ...booking, tenant: { name: booking.tenant.name, slug: booking.tenant.slug } });
+      const r = await sendBookingReminderSms({ ...booking, tenant: { name: booking.tenant.name, slug: booking.tenant.slug, timezone: booking.tenant.timezone, defaultLocale: booking.tenant.defaultLocale } });
       if (r.sent || r.stubbed) {
         await prisma.booking.update({ where: { id }, data: { smsReminderSent: true } });
       }

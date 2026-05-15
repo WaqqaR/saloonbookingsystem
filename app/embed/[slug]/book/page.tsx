@@ -10,7 +10,7 @@ export default async function EmbedBook({ params }: { params: Promise<{ slug: st
   if (!tenant) notFound();
   return (
     <div className="bg-transparent p-4 max-w-3xl mx-auto">
-      <BookingFlow embed tenantSlug={slug} currency={tenant.currency} />
+      <BookingFlow embed tenantSlug={slug} currency={tenant.currency} locale={tenant.defaultLocale} timezone={tenant.timezone} />
     </div>
   );
 }

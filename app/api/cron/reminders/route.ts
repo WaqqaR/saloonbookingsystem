@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
           { smsReminderSent: false },
         ],
       },
-      include: { service: true, staff: true, tenant: { select: { name: true, slug: true, currency: true, email: true } } },
+      include: { service: true, staff: true, tenant: { select: { name: true, slug: true, currency: true, email: true, timezone: true, defaultLocale: true } } },
     });
 
     for (const b of candidates) {
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
       }
       if (t.smsRemindersEnabled && !b.smsReminderSent) {
         try {
-          const r = await sendBookingReminderSms({ ...b, tenant: { name: b.tenant.name, slug: b.tenant.slug } });
+          const r = await sendBookingReminderSms({ ...b, tenant: { name: b.tenant.name, slug: b.tenant.slug, timezone: b.tenant.timezone, defaultLocale: b.tenant.defaultLocale } });
           if (r.sent || r.stubbed) {
             await prisma.booking.update({ where: { id: b.id }, data: { smsReminderSent: true } });
             if (r.sent) smsSent++;

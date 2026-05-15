@@ -1,9 +1,10 @@
 import { Resend } from "resend";
-import { format } from "date-fns";
 import { formatPrice } from "./utils";
 import { buildBookingIcs } from "./calendar";
 import { createBookingManageToken } from "./booking-tokens";
 import { tenantUrl } from "./tenant";
+import { formatInTenantTz } from "./datetime";
+import { getServerTranslator, type ServerTranslator } from "./i18n";
 
 let _resend: Resend | null | undefined;
 
@@ -23,7 +24,7 @@ type BookingWithRefs = {
   priceCents: number;
   service: { name: string };
   staff: { name: string } | null;
-  tenant: { name: string; slug: string; currency: string; email: string };
+  tenant: { name: string; slug: string; currency: string; email: string; timezone: string; defaultLocale: string };
 };
 
 async function manageLink(b: BookingWithRefs): Promise<string> {
@@ -47,24 +48,16 @@ function icsAttachment(b: BookingWithRefs) {
 }
 
 export async function sendBookingConfirmation(b: BookingWithRefs) {
-  const subject = `Booking confirmed — ${b.service.name} at ${b.tenant.name}`;
-  const when = format(b.startTime, "EEEE, MMMM d 'at' h:mm a");
+  const locale = b.tenant.defaultLocale;
+  const te = await getServerTranslator(locale, "email");
+  const tc = await getServerTranslator(locale, "email.confirmation");
+  const tn = await getServerTranslator(locale, "email.notification");
+
+  const subject = te("subjectConfirmation", { service: b.service.name, tenant: b.tenant.name });
+  const when = formatInTenantTz(b.startTime, b.tenant, "full");
   const manageUrl = await manageLink(b);
-  const html = `
-    <h2>Your booking is confirmed</h2>
-    <p>Hi ${escape(b.customerName)},</p>
-    <p>We&rsquo;ve reserved your appointment at <strong>${escape(b.tenant.name)}</strong>.</p>
-    <ul>
-      <li><strong>Service:</strong> ${escape(b.service.name)}</li>
-      ${b.staff ? `<li><strong>Staff:</strong> ${escape(b.staff.name)}</li>` : ""}
-      <li><strong>When:</strong> ${when}</li>
-      <li><strong>Total:</strong> ${formatPrice(b.priceCents, b.tenant.currency)}</li>
-      <li><strong>Confirmation #:</strong> ${b.id.slice(-8).toUpperCase()}</li>
-    </ul>
-    <p>The attached calendar invite will add this appointment to your phone.</p>
-    <p>Need to cancel or reschedule? <a href="${manageUrl}">Manage your booking</a>.</p>
-    <p style="color:#777;font-size:12px;margin-top:32px">${escape(b.tenant.name)}</p>
-  `;
+  const html = renderConfirmationHtml(b, when, manageUrl, tc, tc("heading"));
+  const ownerHtml = renderConfirmationHtml(b, when, manageUrl, tc, tn("heading"));
   const ics = icsAttachment(b);
 
   const resend = getResend();
@@ -84,25 +77,52 @@ export async function sendBookingConfirmation(b: BookingWithRefs) {
   await resend.emails.send({
     from,
     to: b.tenant.email,
-    subject: `New booking: ${b.service.name} for ${b.customerName}`,
-    html: html.replace("Your booking is confirmed", "New booking received"),
+    subject: te("subjectNotification", { service: b.service.name, customer: b.customerName }),
+    html: ownerHtml,
   });
 }
 
+function renderConfirmationHtml(
+  b: BookingWithRefs,
+  when: string,
+  manageUrl: string,
+  tc: ServerTranslator,
+  heading: string,
+) {
+  return `
+    <h2>${heading}</h2>
+    <p>${tc("greeting", { name: escape(b.customerName) })}</p>
+    <p>${tc("intro", { tenant: `<strong>${escape(b.tenant.name)}</strong>` })}</p>
+    <ul>
+      <li><strong>${tc("lineService")}:</strong> ${escape(b.service.name)}</li>
+      ${b.staff ? `<li><strong>${tc("lineStaff")}:</strong> ${escape(b.staff.name)}</li>` : ""}
+      <li><strong>${tc("lineWhen")}:</strong> ${when}</li>
+      <li><strong>${tc("lineTotal")}:</strong> ${formatPrice(b.priceCents, b.tenant.currency)}</li>
+      <li><strong>${tc("lineConfirmation")}:</strong> ${b.id.slice(-8).toUpperCase()}</li>
+    </ul>
+    <p>${tc("icsNote")}</p>
+    <p>${tc("manageCta", { url: manageUrl })}</p>
+    <p style="color:#777;font-size:12px;margin-top:32px">${escape(b.tenant.name)}</p>
+  `;
+}
+
 export async function sendBookingReminder(b: BookingWithRefs) {
-  const when = format(b.startTime, "EEEE, MMMM d 'at' h:mm a");
+  const locale = b.tenant.defaultLocale;
+  const te = await getServerTranslator(locale, "email");
+  const tr = await getServerTranslator(locale, "email.reminder");
+  const when = formatInTenantTz(b.startTime, b.tenant, "full");
   const manageUrl = await manageLink(b);
   const html = `
-    <h2>Your appointment is coming up</h2>
-    <p>Hi ${escape(b.customerName)},</p>
-    <p>This is a friendly reminder of your appointment at <strong>${escape(b.tenant.name)}</strong>.</p>
+    <h2>${tr("heading")}</h2>
+    <p>${tr("greeting", { name: escape(b.customerName) })}</p>
+    <p>${tr("intro", { tenant: `<strong>${escape(b.tenant.name)}</strong>` })}</p>
     <ul>
-      <li><strong>Service:</strong> ${escape(b.service.name)}</li>
-      ${b.staff ? `<li><strong>Staff:</strong> ${escape(b.staff.name)}</li>` : ""}
-      <li><strong>When:</strong> ${when}</li>
+      <li><strong>${tr("lineService")}:</strong> ${escape(b.service.name)}</li>
+      ${b.staff ? `<li><strong>${tr("lineStaff")}:</strong> ${escape(b.staff.name)}</li>` : ""}
+      <li><strong>${tr("lineWhen")}:</strong> ${when}</li>
     </ul>
-    <p>Need to cancel or reschedule? <a href="${manageUrl}">Manage your booking</a>.</p>
-    <p>See you soon!</p>
+    <p>${tr("manageCta", { url: manageUrl })}</p>
+    <p>${tr("signoff")}</p>
   `;
   const resend = getResend();
   if (!resend) {
@@ -110,7 +130,8 @@ export async function sendBookingReminder(b: BookingWithRefs) {
     return;
   }
   const from = process.env.RESEND_FROM || "bookings@example.com";
-  await resend.emails.send({ from, to: b.customerEmail, subject: `Reminder: ${b.service.name} ${when}`, html });
+  const subject = te("subjectReminder", { service: b.service.name, when });
+  await resend.emails.send({ from, to: b.customerEmail, subject, html });
 }
 
 function escape(s: string) {

@@ -1,12 +1,15 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 
 export function CancelButton({ slug, token }: { slug: string; token: string }) {
   const router = useRouter();
+  const tr = useTranslations("manage");
+  const td = useTranslations("manage.cancelDialog");
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +24,7 @@ export function CancelButton({ slug, token }: { slug: string; token: string }) {
     });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      setError(j.error || "Could not cancel.");
+      setError(j.error || td("errorFallback"));
       setBusy(false);
       return;
     }
@@ -32,21 +35,19 @@ export function CancelButton({ slug, token }: { slug: string; token: string }) {
   return (
     <>
       <Button variant="destructive" className="w-full" onClick={() => setOpen(true)}>
-        Cancel this appointment
+        {tr("cancelButton")}
       </Button>
       <Dialog open={open} onOpenChange={(o) => !busy && setOpen(o)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl">Cancel appointment?</DialogTitle>
-            <DialogDescription>
-              You can re-book any time. If you paid in advance, the shop will refund you separately.
-            </DialogDescription>
+            <DialogTitle className="font-display text-2xl">{td("title")}</DialogTitle>
+            <DialogDescription>{td("description")}</DialogDescription>
           </DialogHeader>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>Keep it</Button>
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>{td("keep")}</Button>
             <Button variant="destructive" onClick={confirm} disabled={busy}>
-              {busy ? <><Loader2 className="w-4 h-4 animate-spin" /> Cancelling…</> : "Yes, cancel"}
+              {busy ? <><Loader2 className="w-4 h-4 animate-spin" /> {td("cancelling")}</> : td("confirm")}
             </Button>
           </div>
         </DialogContent>

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -21,10 +23,16 @@ export const metadata: Metadata = {
   description: "A refined booking platform for salons, barbershops, and spas. Online bookings, staff schedules, customer history, and a beautiful widget for any website.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
   return (
-    <html lang="en" className={`${cormorant.variable} ${inter.variable}`}>
-      <body className="min-h-screen antialiased font-sans">{children}</body>
+    <html lang={locale} className={`${cormorant.variable} ${inter.variable}`}>
+      <body className="min-h-screen antialiased font-sans">
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          {children}
+        </NextIntlClientProvider>
+      </body>
     </html>
   );
 }

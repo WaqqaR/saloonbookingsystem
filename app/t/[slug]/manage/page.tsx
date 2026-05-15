@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
-import { format, differenceInHours } from "date-fns";
+import { differenceInHours } from "date-fns";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { verifyBookingManageToken } from "@/lib/booking-tokens";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { formatPrice, formatDuration } from "@/lib/utils";
+import { formatInTenantTz } from "@/lib/datetime";
 import { CancelButton } from "./CancelButton";
 
 export const dynamic = "force-dynamic";
@@ -16,17 +18,18 @@ export default async function ManageBookingPage({
   searchParams: Promise<{ t?: string }>;
 }) {
   const { slug } = await params;
-  const { t } = await searchParams;
-  if (!t) notFound();
+  const { t: token } = await searchParams;
+  const tr = await getTranslations("manage");
+  if (!token) notFound();
 
-  const bookingId = await verifyBookingManageToken(t);
+  const bookingId = await verifyBookingManageToken(token);
   if (!bookingId) {
     return (
       <Centered>
         <Card className="max-w-md w-full">
           <CardHeader>
-            <CardTitle className="font-display text-2xl">Link expired</CardTitle>
-            <CardDescription>This management link is invalid or has expired. Please contact the shop.</CardDescription>
+            <CardTitle className="font-display text-2xl">{tr("linkExpiredTitle")}</CardTitle>
+            <CardDescription>{tr("linkExpiredDescription")}</CardDescription>
           </CardHeader>
         </Card>
       </Centered>
@@ -46,36 +49,45 @@ export default async function ManageBookingPage({
     (booking.status === "confirmed" || booking.status === "pending") &&
     new Date() < booking.startTime;
 
+  const outsideContact = tenant.phone
+    ? tr("outsideWindowPhone", { phone: tenant.phone })
+    : tenant.email
+      ? tr("outsideWindowEmail", { email: tenant.email })
+      : "";
+
   return (
     <Centered>
       <Card className="max-w-lg w-full">
         <CardHeader>
           <div className="text-xs uppercase tracking-wider text-muted-foreground">{tenant.name}</div>
-          <CardTitle className="font-display text-3xl font-light">Your appointment</CardTitle>
-          <CardDescription>Confirmation #{booking.id.slice(-8).toUpperCase()}</CardDescription>
+          <CardTitle className="font-display text-3xl font-light">{tr("title")}</CardTitle>
+          <CardDescription>{tr("confirmationNumber", { number: booking.id.slice(-8).toUpperCase() })}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Row label="Service" value={booking.service.name} />
-          {booking.staff && <Row label="With" value={booking.staff.name} />}
-          <Row label="When" value={format(booking.startTime, "EEEE, MMMM d 'at' h:mm a")} />
-          <Row label="Duration" value={formatDuration(booking.service.durationMinutes)} />
-          <Row label="Total" value={formatPrice(booking.priceCents, tenant.currency)} />
-          <Row label="Status" value={statusLabel(booking.status)} />
+          <Row label={tr("rowService")} value={booking.service.name} />
+          {booking.staff && <Row label={tr("rowWith")} value={booking.staff.name} />}
+          <Row label={tr("rowWhen")} value={formatInTenantTz(booking.startTime, tenant, "full")} />
+          <Row label={tr("rowDuration")} value={formatDuration(booking.service.durationMinutes)} />
+          <Row label={tr("rowTotal")} value={formatPrice(booking.priceCents, tenant.currency)} />
+          <Row label={tr("rowStatus")} value={statusLabel(booking.status, tr)} />
 
           <div className="pt-4 border-t">
             {booking.status === "cancelled" ? (
-              <p className="text-sm text-muted-foreground">This appointment has been cancelled.</p>
+              <p className="text-sm text-muted-foreground">{tr("alreadyCancelled")}</p>
             ) : booking.status === "completed" ? (
-              <p className="text-sm text-muted-foreground">This appointment has been completed. Hope to see you again.</p>
+              <p className="text-sm text-muted-foreground">{tr("alreadyCompleted")}</p>
             ) : !isCancellable ? (
-              <p className="text-sm text-muted-foreground">This appointment is in the past.</p>
+              <p className="text-sm text-muted-foreground">{tr("inThePast")}</p>
             ) : !withinCancelWindow ? (
               <p className="text-sm text-muted-foreground">
-                Cancellations must be made at least {tenant.cancellationWindowHours} hours in advance. To cancel within this window, please contact {tenant.name}
-                {tenant.phone ? ` on ${tenant.phone}` : tenant.email ? ` at ${tenant.email}` : ""}.
+                {tr("outsideWindow", {
+                  hours: tenant.cancellationWindowHours,
+                  tenant: tenant.name,
+                  contact: outsideContact,
+                })}
               </p>
             ) : (
-              <CancelButton slug={tenant.slug} token={t} />
+              <CancelButton slug={tenant.slug} token={token} />
             )}
           </div>
         </CardContent>
@@ -97,13 +109,13 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function statusLabel(s: string) {
+function statusLabel(s: string, tr: (key: string) => string) {
   switch (s) {
-    case "confirmed": return "Confirmed";
-    case "pending": return "Awaiting payment";
-    case "cancelled": return "Cancelled";
-    case "completed": return "Completed";
-    case "no_show": return "No-show";
-    default: return s;
+    case "confirmed": return tr("statusConfirmed");
+    case "pending":   return tr("statusPending");
+    case "cancelled": return tr("statusCancelled");
+    case "completed": return tr("statusCompleted");
+    case "no_show":   return tr("statusNoShow");
+    default:          return s;
   }
 }

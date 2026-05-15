@@ -1,6 +1,7 @@
-import { format } from "date-fns";
 import { createBookingManageToken } from "./booking-tokens";
 import { tenantUrl } from "./tenant";
+import { formatInTenantTz } from "./datetime";
+import { getServerTranslator } from "./i18n";
 
 let _client: any | null | undefined;
 
@@ -27,7 +28,7 @@ type BookingForSms = {
   startTime: Date;
   service: { name: string };
   staff: { name: string } | null;
-  tenant: { name: string; slug: string };
+  tenant: { name: string; slug: string; timezone: string; defaultLocale: string };
 };
 
 async function manageLink(b: BookingForSms): Promise<string> {
@@ -36,16 +37,30 @@ async function manageLink(b: BookingForSms): Promise<string> {
 }
 
 export async function sendBookingReminderSms(b: BookingForSms) {
-  const when = format(b.startTime, "EEE MMM d 'at' h:mm a");
+  const ts = await getServerTranslator(b.tenant.defaultLocale, "sms");
+  const when = formatInTenantTz(b.startTime, b.tenant, "short");
   const link = await manageLink(b);
-  const body = `Hi ${b.customerName.split(" ")[0]}, reminder of your ${b.service.name} appointment at ${b.tenant.name}${b.staff ? ` with ${b.staff.name}` : ""} on ${when}. Manage: ${link}`;
+  const body = ts("reminder", {
+    firstName: b.customerName.split(" ")[0],
+    service: b.service.name,
+    tenant: b.tenant.name,
+    withStaff: b.staff ? ts("withStaff", { name: b.staff.name }) : "",
+    when,
+    link,
+  });
   return await send(b.customerPhone, body);
 }
 
 export async function sendBookingConfirmationSms(b: BookingForSms) {
-  const when = format(b.startTime, "EEE MMM d 'at' h:mm a");
+  const ts = await getServerTranslator(b.tenant.defaultLocale, "sms");
+  const when = formatInTenantTz(b.startTime, b.tenant, "short");
   const link = await manageLink(b);
-  const body = `Booking confirmed: ${b.service.name} at ${b.tenant.name} on ${when}. Manage: ${link}`;
+  const body = ts("confirmation", {
+    service: b.service.name,
+    tenant: b.tenant.name,
+    when,
+    link,
+  });
   return await send(b.customerPhone, body);
 }
 
