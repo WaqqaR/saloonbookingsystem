@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BUSINESS_TYPES } from "@/lib/treatments";
+import { LOCALES } from "@/lib/locales";
 
 type Settings = {
   name: string;
   email: string;
   phone: string;
+  locale: string;
   timezone: string;
   currency: string;
   businessType: string;
@@ -28,6 +30,11 @@ export function SettingsForm({ initial }: { initial: Settings }) {
   const [s, setS] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  // Keep the tenant's current locale selectable even if it isn't one of the
+  // curated options (e.g. it was detected from the browser at signup).
+  const localeOptions = LOCALES.some((l) => l.value === s.locale)
+    ? LOCALES
+    : [{ value: s.locale, label: s.locale }, ...LOCALES];
 
   async function save() {
     setSaving(true);
@@ -63,6 +70,19 @@ export function SettingsForm({ initial }: { initial: Settings }) {
         <div>
           <Label>{t("currency")}</Label>
           <Input value={s.currency} onChange={(e) => { setS({ ...s, currency: e.target.value.toUpperCase() }); setSaved(false); }} placeholder="GBP" />
+        </div>
+        <div className="sm:col-span-2">
+          <Label>{t("language")}</Label>
+          <select
+            value={s.locale}
+            onChange={(e) => { setS({ ...s, locale: e.target.value }); setSaved(false); }}
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            {localeOptions.map((l) => (
+              <option key={l.value} value={l.value}>{l.label}</option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground mt-1">{t("languageHint")}</p>
         </div>
         <div className="sm:col-span-2">
           <Label>{t("businessType")}</Label>

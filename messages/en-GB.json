@@ -184,6 +184,8 @@
       "phoneOptional": "Phone (optional)",
       "timezone": "Timezone",
       "currency": "Currency",
+      "language": "Language",
+      "languageHint": "English and Arabic are fully translated. Other choices keep English text but still localise dates and prices.",
       "businessType": "Business type",
       "businessTypeHint": "Drives treatment suggestions on the Services page.",
       "bookingPolicies": "Booking policies",

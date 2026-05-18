@@ -12,6 +12,13 @@ const SUPPORTED = new Set(["en-GB", "ar-AE"]);
 const cache = new Map<string, { locale: string; at: number }>();
 const TTL = 60_000;
 
+// Lets a server route drop a tenant's cached locale the moment it changes
+// (e.g. owner picks a new language in Settings) instead of waiting out the
+// TTL. Per-process: other serverless instances still self-heal within TTL.
+export function invalidateLocaleCache(slug: string) {
+  cache.delete(slug);
+}
+
 function slugFromPath(pathname: string): string | null {
   const m = pathname.match(/^\/(?:t|embed)\/([^/]+)/);
   return m ? decodeURIComponent(m[1]) : null;

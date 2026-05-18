@@ -25,6 +25,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ slug:
               name: tenant.name,
               email: tenant.email,
               phone: tenant.phone || "",
+              locale: tenant.defaultLocale || "en-GB",
               timezone: tenant.timezone,
               currency: tenant.currency,
               businessType: tenant.businessType || "",
