@@ -4,9 +4,9 @@ import { prisma } from "../lib/prisma";
 
 const DEFAULT_LOCALE = "en-GB";
 // Locales we ship a message catalog for. A tenant set to anything else (e.g.
-// fr-FR) still gets localised dates/prices via lib/datetime + formatPrice, but
+// nl-NL) still gets localised dates/prices via lib/datetime + formatPrice, but
 // falls back to English copy here until its catalog is added.
-const SUPPORTED = new Set(["en-GB", "ar-AE"]);
+const SUPPORTED = new Set(["en-GB", "ar-AE", "fr-FR", "es-ES", "de-DE", "it-IT"]);
 
 // slug -> resolved locale, short-lived so we don't hit the DB on every render.
 const cache = new Map<string, { locale: string; at: number }>();
