@@ -9,7 +9,14 @@ const DEFAULT_LOCALE = "en-GB";
 const SUPPORTED = new Set(["en-GB", "ar-AE", "fr-FR", "es-ES", "de-DE", "it-IT"]);
 
 // slug -> resolved locale, short-lived so we don't hit the DB on every render.
-const cache = new Map<string, { locale: string; at: number }>();
+// Stored on globalThis so the RSC render runtime and the Route Handler runtime
+// (separate webpack bundles, same Node process) share ONE map — otherwise
+// invalidateLocaleCache() from the settings route would clear a different map
+// than the one getRequestConfig reads, and a language change wouldn't show
+// until the TTL expired.
+type LocaleCache = Map<string, { locale: string; at: number }>;
+const g = globalThis as typeof globalThis & { __localeCache?: LocaleCache };
+const cache: LocaleCache = (g.__localeCache ??= new Map());
 const TTL = 60_000;
 
 // Lets a server route drop a tenant's cached locale the moment it changes
