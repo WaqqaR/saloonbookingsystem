@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { BillingActions } from "./BillingActions";
 import { stripeEnabled } from "@/lib/stripe";
+import { getTranslations } from "next-intl/server";
+import { formatInTenantTz } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 
@@ -13,33 +15,43 @@ export default async function BillingPage({ params }: { params: Promise<{ slug: 
   const sub = await getSubscriptionState(tenant.id);
   const monthlyPence = sub.seats * 1500;
   const enabled = stripeEnabled();
+  const t = await getTranslations("admin.billing");
+
+  const statusKeys: Record<string, string> = {
+    trialing: "statusTrialing",
+    active: "statusActive",
+    past_due: "statusPastDue",
+    canceled: "statusCanceled",
+    incomplete: "statusIncomplete",
+  };
+  const statusLabel = statusKeys[sub.status] ? t(statusKeys[sub.status]) : sub.status;
 
   return (
     <div className="p-6 max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold">Billing</h1>
+      <h1 className="text-2xl font-bold">{t("title")}</h1>
 
       <Card>
         <CardHeader>
-          <CardTitle>Current plan</CardTitle>
-          <CardDescription>Per-chair monthly subscription.</CardDescription>
+          <CardTitle>{t("currentPlan")}</CardTitle>
+          <CardDescription>{t("currentPlanDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Status</span>
-            <Badge variant={sub.active ? "success" : "destructive"}>{sub.status}</Badge>
+            <span className="text-muted-foreground">{t("statusLabel")}</span>
+            <Badge variant={sub.active ? "success" : "destructive"}>{statusLabel}</Badge>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Active staff (seats)</span>
+            <span className="text-muted-foreground">{t("activeSeats")}</span>
             <span>{sub.seats}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Monthly cost</span>
+            <span className="text-muted-foreground">{t("monthlyCost")}</span>
             <span className="font-semibold">£{(monthlyPence / 100).toFixed(2)}</span>
           </div>
           {sub.trialEndsAt && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Trial ends</span>
-              <span>{new Date(sub.trialEndsAt).toLocaleDateString()}</span>
+              <span className="text-muted-foreground">{t("trialEnds")}</span>
+              <span>{formatInTenantTz(sub.trialEndsAt, tenant, "dateMedium")}</span>
             </div>
           )}
         </CardContent>
@@ -47,13 +59,16 @@ export default async function BillingPage({ params }: { params: Promise<{ slug: 
 
       <Card>
         <CardHeader>
-          <CardTitle>Manage payment & invoices</CardTitle>
-          <CardDescription>Update card, view invoices, or cancel your subscription.</CardDescription>
+          <CardTitle>{t("manageTitle")}</CardTitle>
+          <CardDescription>{t("manageDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           {!enabled ? (
             <p className="text-sm text-muted-foreground">
-              Stripe is not configured in this environment. Set <code>STRIPE_SECRET_KEY</code> and <code>STRIPE_PRICE_ID</code> in your env to enable billing.
+              {t.rich("stripeNotConfigured", {
+                secret: () => <code>STRIPE_SECRET_KEY</code>,
+                price: () => <code>STRIPE_PRICE_ID</code>,
+              })}
             </p>
           ) : (
             <BillingActions />

@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,9 +23,10 @@ type Staff = {
 };
 
 const empty: Partial<Staff> = { name: "", email: "", phone: "", bio: "", color: "#888888", active: true };
-const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function StaffManager({ initial }: { initial: Staff[] }) {
+  const t = useTranslations("admin.staff");
+  const c = useTranslations("admin.common");
   const [items, setItems] = useState(initial);
   const [editing, setEditing] = useState<Partial<Staff> | null>(null);
   const [hoursFor, setHoursFor] = useState<Staff | null>(null);
@@ -48,7 +50,7 @@ export function StaffManager({ initial }: { initial: Staff[] }) {
   }
 
   async function remove(id: string) {
-    if (!confirm("Remove this staff member? Their subscription seat will be removed.")) return;
+    if (!confirm(t("removeConfirm"))) return;
     const res = await fetch(`/api/admin/staff/${id}`, { method: "DELETE" });
     if (res.ok) setItems(items.filter((i) => i.id !== id));
     router.refresh();
@@ -68,24 +70,24 @@ export function StaffManager({ initial }: { initial: Staff[] }) {
       <div className="flex justify-end mb-4">
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditing(empty)}><Plus className="w-4 h-4" /> Add staff member</Button>
+            <Button onClick={() => setEditing(empty)}><Plus className="w-4 h-4" /> {t("addStaff")}</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>{editing?.id ? "Edit staff" : "New staff"}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editing?.id ? t("editStaff") : t("newStaff")}</DialogTitle></DialogHeader>
             {editing && (
               <div className="space-y-3">
-                <div><Label>Name</Label><Input value={editing.name || ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></div>
+                <div><Label>{t("fieldName")}</Label><Input value={editing.name || ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Email</Label><Input type="email" value={editing.email || ""} onChange={(e) => setEditing({ ...editing, email: e.target.value })} /></div>
-                  <div><Label>Phone</Label><Input value={editing.phone || ""} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} /></div>
+                  <div><Label>{t("fieldEmail")}</Label><Input type="email" value={editing.email || ""} onChange={(e) => setEditing({ ...editing, email: e.target.value })} /></div>
+                  <div><Label>{t("fieldPhone")}</Label><Input value={editing.phone || ""} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} /></div>
                 </div>
-                <div><Label>Bio</Label><Textarea value={editing.bio || ""} onChange={(e) => setEditing({ ...editing, bio: e.target.value })} /></div>
-                <div><Label>Calendar color</Label><Input type="color" value={editing.color || "#888888"} onChange={(e) => setEditing({ ...editing, color: e.target.value })} className="w-16 h-10 p-1" /></div>
+                <div><Label>{t("fieldBio")}</Label><Textarea value={editing.bio || ""} onChange={(e) => setEditing({ ...editing, bio: e.target.value })} /></div>
+                <div><Label>{t("fieldCalendarColor")}</Label><Input type="color" value={editing.color || "#888888"} onChange={(e) => setEditing({ ...editing, color: e.target.value })} className="w-16 h-10 p-1" /></div>
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={editing.active ?? true} onChange={(e) => setEditing({ ...editing, active: e.target.checked })} />
-                  Active (counts as a billed seat)
+                  {t("activeBilledSeat")}
                 </label>
-                <div className="flex justify-end"><Button onClick={save}>Save</Button></div>
+                <div className="flex justify-end"><Button onClick={save}>{c("save")}</Button></div>
               </div>
             )}
           </DialogContent>
@@ -93,19 +95,19 @@ export function StaffManager({ initial }: { initial: Staff[] }) {
       </div>
 
       <table className="w-full text-sm">
-        <thead className="text-left text-xs uppercase text-muted-foreground border-b">
-          <tr><th className="p-2">Name</th><th className="p-2">Email</th><th className="p-2">Status</th><th></th></tr>
+        <thead className="text-start text-xs uppercase text-muted-foreground border-b">
+          <tr><th className="p-2">{t("fieldName")}</th><th className="p-2">{t("fieldEmail")}</th><th className="p-2">{t("colStatus")}</th><th></th></tr>
         </thead>
         <tbody className="divide-y">
           {items.map((s) => (
             <tr key={s.id}>
               <td className="p-2 font-medium flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ background: s.color || "#888" }} />{s.name}</td>
               <td className="p-2 text-muted-foreground">{s.email}</td>
-              <td className="p-2"><Badge variant={s.active ? "success" : "secondary"}>{s.active ? "Active" : "Inactive"}</Badge></td>
-              <td className="p-2 text-right">
-                <Button size="sm" variant="ghost" onClick={() => setHoursFor(s)}><Clock className="w-3 h-3" /></Button>
-                <Button size="sm" variant="ghost" onClick={() => { setEditing(s); setOpen(true); }}><Pencil className="w-3 h-3" /></Button>
-                <Button size="sm" variant="ghost" onClick={() => remove(s.id)}><Trash2 className="w-3 h-3" /></Button>
+              <td className="p-2"><Badge variant={s.active ? "success" : "secondary"}>{s.active ? t("statusActive") : t("statusInactive")}</Badge></td>
+              <td className="p-2 text-end">
+                <Button size="sm" variant="ghost" title={t("editHours")} onClick={() => setHoursFor(s)}><Clock className="w-3 h-3" /></Button>
+                <Button size="sm" variant="ghost" title={c("edit")} onClick={() => { setEditing(s); setOpen(true); }}><Pencil className="w-3 h-3" /></Button>
+                <Button size="sm" variant="ghost" title={c("remove")} onClick={() => remove(s.id)}><Trash2 className="w-3 h-3" /></Button>
               </td>
             </tr>
           ))}
@@ -114,7 +116,7 @@ export function StaffManager({ initial }: { initial: Staff[] }) {
 
       <Dialog open={!!hoursFor} onOpenChange={(o) => !o && setHoursFor(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{hoursFor?.name}&apos;s hours</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("hoursTitle", { name: hoursFor?.name ?? "" })}</DialogTitle></DialogHeader>
           {hoursFor && <StaffHoursEditor staff={hoursFor} onSave={(h) => { saveHours(hoursFor.id, h); setHoursFor(null); }} />}
         </DialogContent>
       </Dialog>
@@ -123,6 +125,9 @@ export function StaffManager({ initial }: { initial: Staff[] }) {
 }
 
 function StaffHoursEditor({ staff, onSave }: { staff: Staff; onSave: (hours: any[]) => void }) {
+  const t = useTranslations("admin.staff");
+  const c = useTranslations("admin.common");
+  const dayNames = [t("daySun"), t("dayMon"), t("dayTue"), t("dayWed"), t("dayThu"), t("dayFri"), t("daySat")];
   const init = staff.workingHours.length > 0 ? staff.workingHours :
     [0,1,2,3,4,5,6].map((d) => ({ id: "", dayOfWeek: d, open: d !== 0, openTime: "09:00", closeTime: "18:00" }));
   const [hours, setHours] = useState(init);
@@ -136,15 +141,15 @@ function StaffHoursEditor({ staff, onSave }: { staff: Staff; onSave: (hours: any
             <div className="w-12 text-sm font-medium">{dayNames[d]}</div>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={h.open} onChange={(e) => setHours(replace(hours, d, { ...h, open: e.target.checked }))} />
-              Working
+              {t("working")}
             </label>
             <Input className="w-28" type="time" value={h.openTime} onChange={(e) => setHours(replace(hours, d, { ...h, openTime: e.target.value }))} disabled={!h.open} />
-            <span className="text-muted-foreground">to</span>
+            <span className="text-muted-foreground">{t("timeRangeTo")}</span>
             <Input className="w-28" type="time" value={h.closeTime} onChange={(e) => setHours(replace(hours, d, { ...h, closeTime: e.target.value }))} disabled={!h.open} />
           </div>
         );
       })}
-      <div className="flex justify-end"><Button onClick={() => onSave(hours)}>Save</Button></div>
+      <div className="flex justify-end"><Button onClick={() => onSave(hours)}>{c("save")}</Button></div>
     </div>
   );
 }

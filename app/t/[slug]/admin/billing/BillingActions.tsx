@@ -2,9 +2,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CreditCard } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export function BillingActions() {
   const [loading, setLoading] = useState(false);
+  const t = useTranslations("admin.billing");
 
   async function openPortal() {
     setLoading(true);
@@ -18,7 +20,7 @@ export function BillingActions() {
 
   return (
     <Button onClick={openPortal} disabled={loading}>
-      <CreditCard className="w-4 h-4" /> {loading ? "Opening…" : "Open billing portal"}
+      <CreditCard className="w-4 h-4" /> {loading ? t("opening") : t("openPortal")}
     </Button>
   );
 }

@@ -2,19 +2,14 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantAdmin } from "@/lib/admin-guard";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookingsTable } from "./BookingsTable";
+import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 type Filter = "upcoming" | "all" | "pending" | "past" | "refunded";
 
-const filters: { id: Filter; label: string }[] = [
-  { id: "upcoming", label: "Upcoming" },
-  { id: "pending",  label: "Pending payment" },
-  { id: "past",     label: "Past" },
-  { id: "refunded", label: "Refunded" },
-  { id: "all",      label: "All" },
-];
+const filterIds: Filter[] = ["upcoming", "pending", "past", "refunded", "all"];
 
 export default async function BookingsAdmin({
   params,
@@ -26,7 +21,16 @@ export default async function BookingsAdmin({
   const { slug } = await params;
   const sp = await searchParams;
   const { tenant } = await requireTenantAdmin(slug);
+  const t = await getTranslations("admin.bookings");
   const filter: Filter = (sp.filter as Filter) || "upcoming";
+
+  const filterLabels: Record<Filter, string> = {
+    upcoming: t("filterUpcoming"),
+    pending: t("filterPending"),
+    past: t("filterPast"),
+    refunded: t("filterRefunded"),
+    all: t("filterAll"),
+  };
 
   const now = new Date();
   const where: any = { tenantId: tenant.id };
@@ -81,16 +85,16 @@ export default async function BookingsAdmin({
 
   return (
     <div className="p-6 max-w-6xl">
-      <h1 className="font-display text-3xl font-medium mb-6">Bookings</h1>
+      <h1 className="font-display text-3xl font-medium mb-6">{t("title")}</h1>
 
       {/* Filter tabs */}
       <div className="flex flex-wrap gap-1 mb-5 border-b border-border/60">
-        {filters.map((f) => {
-          const active = f.id === filter;
+        {filterIds.map((id) => {
+          const active = id === filter;
           return (
             <Link
-              key={f.id}
-              href={`?filter=${f.id}`}
+              key={id}
+              href={`?filter=${id}`}
               className={
                 "px-4 py-2.5 text-sm transition border-b-2 -mb-px " +
                 (active
@@ -98,8 +102,8 @@ export default async function BookingsAdmin({
                   : "border-transparent text-muted-foreground hover:text-foreground")
               }
             >
-              {f.label}
-              <span className="ml-2 text-xs opacity-60">{countOf[f.id]}</span>
+              {filterLabels[id]}
+              <span className="ms-2 text-xs opacity-60">{countOf[id]}</span>
             </Link>
           );
         })}
@@ -107,7 +111,12 @@ export default async function BookingsAdmin({
 
       <Card>
         <CardContent className="p-0">
-          <BookingsTable bookings={bookings as any} currency={tenant.currency} />
+          <BookingsTable
+            bookings={bookings as any}
+            currency={tenant.currency}
+            defaultLocale={tenant.defaultLocale}
+            timezone={tenant.timezone}
+          />
         </CardContent>
       </Card>
     </div>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import { dirForLocale } from "@/lib/locales";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -27,7 +28,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await getLocale();
   const messages = await getMessages();
   return (
-    <html lang={locale} className={`${cormorant.variable} ${inter.variable}`}>
+    <html lang={locale} dir={dirForLocale(locale)} className={`${cormorant.variable} ${inter.variable}`}>
       <body className="min-h-screen antialiased font-sans">
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}

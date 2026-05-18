@@ -13,6 +13,9 @@ export function proxy(req: NextRequest) {
     requestHeaders.set("x-tenant-slug", sub);
   }
   requestHeaders.set("x-host", host);
+  // Path-based routing keeps the slug in the URL; expose it so i18n/request.ts
+  // can resolve the tenant locale before the root layout renders.
+  requestHeaders.set("x-pathname", req.nextUrl.pathname);
 
   // Rewrite tenant subdomains:
   //  - acme.lvh.me/        -> /t/acme/
@@ -24,6 +27,7 @@ export function proxy(req: NextRequest) {
         !url.pathname.startsWith("/_next") && url.pathname !== "/widget.js" &&
         !url.pathname.startsWith("/embed/")) {
       url.pathname = `/t/${sub}${url.pathname === "/" ? "" : url.pathname}`;
+      requestHeaders.set("x-pathname", url.pathname);
       return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
     }
   }

@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,8 @@ type Settings = {
 
 export function SettingsForm({ initial }: { initial: Settings }) {
   const router = useRouter();
+  const t = useTranslations("admin.settings");
+  const c = useTranslations("admin.common");
   const [s, setS] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -42,94 +45,94 @@ export function SettingsForm({ initial }: { initial: Settings }) {
     <div className="space-y-5">
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
-          <Label>Studio name</Label>
+          <Label>{t("studioName")}</Label>
           <Input value={s.name} onChange={(e) => { setS({ ...s, name: e.target.value }); setSaved(false); }} />
         </div>
         <div>
-          <Label>Contact email</Label>
+          <Label>{t("contactEmail")}</Label>
           <Input type="email" value={s.email} onChange={(e) => { setS({ ...s, email: e.target.value }); setSaved(false); }} />
         </div>
         <div>
-          <Label>Phone (optional)</Label>
+          <Label>{t("phoneOptional")}</Label>
           <Input value={s.phone} onChange={(e) => { setS({ ...s, phone: e.target.value }); setSaved(false); }} />
         </div>
         <div>
-          <Label>Timezone</Label>
+          <Label>{t("timezone")}</Label>
           <Input value={s.timezone} onChange={(e) => { setS({ ...s, timezone: e.target.value }); setSaved(false); }} placeholder="Europe/London" />
         </div>
         <div>
-          <Label>Currency</Label>
+          <Label>{t("currency")}</Label>
           <Input value={s.currency} onChange={(e) => { setS({ ...s, currency: e.target.value.toUpperCase() }); setSaved(false); }} placeholder="GBP" />
         </div>
         <div className="sm:col-span-2">
-          <Label>Business type</Label>
+          <Label>{t("businessType")}</Label>
           <select
             value={s.businessType}
             onChange={(e) => { setS({ ...s, businessType: e.target.value }); setSaved(false); }}
             className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
           >
-            <option value="">— Select —</option>
+            <option value="">{c("selectPlaceholder")}</option>
             {BUSINESS_TYPES.map((b) => (
               <option key={b.value} value={b.value}>{b.label}</option>
             ))}
           </select>
-          <p className="text-xs text-muted-foreground mt-1">Drives treatment suggestions on the Services page.</p>
+          <p className="text-xs text-muted-foreground mt-1">{t("businessTypeHint")}</p>
         </div>
       </div>
 
       <div className="border-t pt-5">
-        <h3 className="font-display text-lg mb-1">Booking policies</h3>
-        <p className="text-sm text-muted-foreground mb-4">Set the rules customers see when booking.</p>
+        <h3 className="font-display text-lg mb-1">{t("bookingPolicies")}</h3>
+        <p className="text-sm text-muted-foreground mb-4">{t("bookingPoliciesDesc")}</p>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <Label>Cancellation window (hours)</Label>
+            <Label>{t("cancellationWindow")}</Label>
             <Input type="number" min={0} max={168} value={s.cancellationWindowHours}
               onChange={(e) => { setS({ ...s, cancellationWindowHours: Number(e.target.value) }); setSaved(false); }} />
-            <p className="text-xs text-muted-foreground mt-1">Customers must cancel at least this many hours before their appointment.</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("cancellationWindowHint")}</p>
           </div>
           <div>
-            <Label>No-show fee (% of price)</Label>
+            <Label>{t("noShowFee")}</Label>
             <Input type="number" min={0} max={100} value={s.noShowFeePercent}
               onChange={(e) => { setS({ ...s, noShowFeePercent: Number(e.target.value) }); setSaved(false); }} />
-            <p className="text-xs text-muted-foreground mt-1">Used when marking a booking as no-show. 100% = keep full deposit/payment.</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("noShowFeeHint")}</p>
           </div>
         </div>
       </div>
 
       <div className="border-t pt-5">
-        <h3 className="font-display text-lg mb-1">Reminders</h3>
-        <p className="text-sm text-muted-foreground mb-4">Automatic reminders before customers&apos; appointments.</p>
+        <h3 className="font-display text-lg mb-1">{t("reminders")}</h3>
+        <p className="text-sm text-muted-foreground mb-4">{t("remindersDesc")}</p>
         <div className="space-y-3">
           <label className="flex items-start gap-3 p-3 border rounded cursor-pointer hover:border-accent/50">
             <input type="checkbox" className="mt-0.5" checked={s.emailRemindersEnabled}
               onChange={(e) => { setS({ ...s, emailRemindersEnabled: e.target.checked }); setSaved(false); }} />
             <div>
-              <div className="font-medium">Email reminders</div>
-              <div className="text-xs text-muted-foreground">Sent to the customer&apos;s email address. Free.</div>
+              <div className="font-medium">{t("emailReminders")}</div>
+              <div className="text-xs text-muted-foreground">{t("emailRemindersDesc")}</div>
             </div>
           </label>
           <label className="flex items-start gap-3 p-3 border rounded cursor-pointer hover:border-accent/50">
             <input type="checkbox" className="mt-0.5" checked={s.smsRemindersEnabled}
               onChange={(e) => { setS({ ...s, smsRemindersEnabled: e.target.checked }); setSaved(false); }} />
             <div>
-              <div className="font-medium">SMS reminders</div>
-              <div className="text-xs text-muted-foreground">Sent via Twilio. Approx. £0.04 per message.</div>
+              <div className="font-medium">{t("smsReminders")}</div>
+              <div className="text-xs text-muted-foreground">{t("smsRemindersDesc")}</div>
             </div>
           </label>
           <div className="grid sm:grid-cols-2 gap-4 pt-2">
             <div>
-              <Label>Send reminders how many hours before?</Label>
+              <Label>{t("reminderHours")}</Label>
               <Input type="number" min={1} max={168} value={s.reminderHoursBefore}
                 onChange={(e) => { setS({ ...s, reminderHoursBefore: Number(e.target.value) }); setSaved(false); }} />
-              <p className="text-xs text-muted-foreground mt-1">Common values: 24 (day before), 2 (a couple hours before).</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("reminderHoursHint")}</p>
             </div>
           </div>
         </div>
       </div>
 
       <div className="flex items-center gap-3 border-t pt-5">
-        <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save settings"}</Button>
-        {saved && <span className="text-sm text-sage">Saved.</span>}
+        <Button onClick={save} disabled={saving}>{saving ? c("saving") : t("saveButton")}</Button>
+        {saved && <span className="text-sm text-sage">{c("saved")}</span>}
       </div>
     </div>
   );

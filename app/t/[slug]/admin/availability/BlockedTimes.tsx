@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,8 @@ import { format } from "date-fns";
 type Block = { id: string; startTime: string | Date; endTime: string | Date; reason: string | null };
 
 export function BlockedTimes({ initial }: { initial: Block[] }) {
+  const t = useTranslations("admin.availability");
+  const c = useTranslations("admin.common");
   const [items, setItems] = useState(initial);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -38,18 +41,18 @@ export function BlockedTimes({ initial }: { initial: Block[] }) {
   return (
     <div className="space-y-4">
       <div className="grid sm:grid-cols-4 gap-3 items-end">
-        <div><Label>From</Label><Input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} /></div>
-        <div><Label>To</Label><Input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} /></div>
-        <div><Label>Reason</Label><Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Holiday" /></div>
-        <Button onClick={add}>Add block</Button>
+        <div><Label>{t("from")}</Label><Input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} /></div>
+        <div><Label>{t("toLabel")}</Label><Input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} /></div>
+        <div><Label>{t("reason")}</Label><Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("reasonPlaceholder")} /></div>
+        <Button onClick={add}>{t("addBlock")}</Button>
       </div>
 
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No blocked times.</p>
+        <p className="text-sm text-muted-foreground">{t("noBlocked")}</p>
       ) : (
         <table className="w-full text-sm">
-          <thead className="text-left text-xs uppercase text-muted-foreground border-b">
-            <tr><th className="p-2">Start</th><th className="p-2">End</th><th className="p-2">Reason</th><th></th></tr>
+          <thead className="text-start text-xs uppercase text-muted-foreground border-b">
+            <tr><th className="p-2">{t("colStart")}</th><th className="p-2">{t("colEnd")}</th><th className="p-2">{t("colReason")}</th><th></th></tr>
           </thead>
           <tbody className="divide-y">
             {items.map((b) => (
@@ -57,7 +60,7 @@ export function BlockedTimes({ initial }: { initial: Block[] }) {
                 <td className="p-2">{format(new Date(b.startTime), "MMM d, yyyy h:mm a")}</td>
                 <td className="p-2">{format(new Date(b.endTime), "MMM d, yyyy h:mm a")}</td>
                 <td className="p-2">{b.reason}</td>
-                <td className="p-2 text-right">
+                <td className="p-2 text-end">
                   <Button size="sm" variant="ghost" onClick={() => remove(b.id)}><Trash2 className="w-3 h-3" /></Button>
                 </td>
               </tr>

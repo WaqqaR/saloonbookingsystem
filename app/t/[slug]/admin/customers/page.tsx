@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAdmin } from "@/lib/admin-guard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function CustomersAdmin({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { tenant } = await requireTenantAdmin(slug);
+  const t = await getTranslations("admin.customers");
   const customers = await prisma.customer.findMany({
     where: { tenantId: tenant.id },
     orderBy: { createdAt: "desc" },
@@ -18,16 +20,16 @@ export default async function CustomersAdmin({ params }: { params: Promise<{ slu
   });
   return (
     <div className="p-6 max-w-5xl">
-      <h1 className="text-2xl font-bold mb-6">Customers</h1>
+      <h1 className="text-2xl font-bold mb-6">{t("title")}</h1>
       <Card>
-        <CardHeader><CardTitle>{customers.length} customer{customers.length === 1 ? "" : "s"}</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t("countTitle", { count: customers.length })}</CardTitle></CardHeader>
         <CardContent className="p-0">
           {customers.length === 0 ? (
-            <p className="p-6 text-sm text-muted-foreground">No customers yet. They&apos;ll show up automatically as bookings come in.</p>
+            <p className="p-6 text-sm text-muted-foreground">{t("emptyState")}</p>
           ) : (
             <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase text-muted-foreground border-b bg-stone-50">
-                <tr><th className="p-3">Name</th><th className="p-3">Contact</th><th className="p-3">Bookings</th><th></th></tr>
+              <thead className="text-start text-xs uppercase text-muted-foreground border-b bg-stone-50">
+                <tr><th className="p-3">{t("colName")}</th><th className="p-3">{t("colContact")}</th><th className="p-3">{t("colBookings")}</th><th></th></tr>
               </thead>
               <tbody className="divide-y">
                 {customers.map((c) => (
@@ -38,8 +40,8 @@ export default async function CustomersAdmin({ params }: { params: Promise<{ slu
                       <div className="text-xs">{c.phone}</div>
                     </td>
                     <td className="p-3"><Badge variant="secondary">{c._count.bookings}</Badge></td>
-                    <td className="p-3 text-right">
-                      <Link className="text-sm text-primary underline" href={`/t/${slug}/admin/customers/${c.id}`}>View</Link>
+                    <td className="p-3 text-end">
+                      <Link className="text-sm text-primary underline" href={`/t/${slug}/admin/customers/${c.id}`}>{t("view")}</Link>
                     </td>
                   </tr>
                 ))}

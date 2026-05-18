@@ -6,9 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Check, Loader2, X } from "lucide-react";
+import { Check, Loader2, X, Pencil } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
 import { BUSINESS_TYPES, type BusinessType } from "@/lib/treatments";
+import { LOCALES, CURRENCIES, COMMON_TIMEZONES, currencyForLocale, isValidTimezone, regionSummary } from "@/lib/locales";
+
+const SELECT_CLASS =
+  "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring";
 
 function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 32);
@@ -26,9 +30,38 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [baseDomain, setBaseDomain] = useState("yoursaas.com");
+  const [locale, setLocale] = useState("en-GB");
+  const [timezone, setTimezone] = useState("Europe/London");
+  const [currency, setCurrency] = useState("GBP");
+  const [regionOpen, setRegionOpen] = useState(false);
+
   useEffect(() => {
     if (typeof window !== "undefined") setBaseDomain(window.location.host);
   }, []);
+
+  // Best-effort detection from the browser; owner can correct it below.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz && isValidTimezone(tz)) setTimezone(tz);
+    } catch {}
+    const nav = navigator.language;
+    if (nav && /^[a-z]{2}-[A-Z]{2}$/.test(nav)) {
+      setLocale(nav);
+      setCurrency(currencyForLocale(nav));
+    }
+  }, []);
+
+  const localeOptions = LOCALES.some((l) => l.value === locale)
+    ? LOCALES
+    : [{ value: locale, label: locale }, ...LOCALES];
+  const tzOptions = COMMON_TIMEZONES.includes(timezone)
+    ? COMMON_TIMEZONES
+    : [timezone, ...COMMON_TIMEZONES];
+  const currencyOptions = CURRENCIES.some((c) => c.value === currency)
+    ? CURRENCIES
+    : [{ value: currency, label: currency }, ...CURRENCIES];
 
   useEffect(() => {
     if (!slugTouched) setSlug(slugify(shopName));
@@ -52,7 +85,7 @@ export default function SignupPage() {
     const res = await fetch("/api/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ shopName, slug, businessType, email, password }),
+      body: JSON.stringify({ shopName, slug, businessType, email, password, locale, timezone, currency }),
     });
     const data = await res.json();
     setLoading(false);
@@ -97,7 +130,7 @@ export default function SignupPage() {
                 <select
                   value={businessType}
                   onChange={(e) => setBusinessType(e.target.value as BusinessType)}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  className={SELECT_CLASS}
                 >
                   {BUSINESS_TYPES.map((b) => (
                     <option key={b.value} value={b.value}>{b.label}</option>
@@ -116,6 +149,53 @@ export default function SignupPage() {
                   <span className="text-sm text-muted-foreground whitespace-nowrap">.{baseDomain}</span>
                 </div>
                 <SlugFeedback status={slugStatus} slug={slug} baseDomain={baseDomain} />
+              </div>
+              <div>
+                <div className="flex items-center justify-between">
+                  <Label>Region {!regionOpen && <span className="text-muted-foreground font-normal">(detected)</span>}</Label>
+                  {!regionOpen && (
+                    <button
+                      type="button"
+                      onClick={() => setRegionOpen(true)}
+                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                    >
+                      <Pencil className="w-3 h-3" /> change
+                    </button>
+                  )}
+                </div>
+                {!regionOpen ? (
+                  <div className={SELECT_CLASS + " items-center text-muted-foreground cursor-default"}>
+                    {regionSummary(locale, timezone, currency)}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div>
+                      <span className="text-xs text-muted-foreground">Language</span>
+                      <select value={locale} onChange={(e) => setLocale(e.target.value)} className={SELECT_CLASS}>
+                        {localeOptions.map((l) => (
+                          <option key={l.value} value={l.value}>{l.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Timezone</span>
+                      <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className={SELECT_CLASS}>
+                        {tzOptions.map((tz) => (
+                          <option key={tz} value={tz}>{tz}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Currency</span>
+                      <select value={currency} onChange={(e) => setCurrency(e.target.value)} className={SELECT_CLASS}>
+                        {currencyOptions.map((c) => (
+                          <option key={c.value} value={c.value}>{c.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">Sets your booking page language, times, and prices. You can change this later in settings.</p>
               </div>
               <div>
                 <Label>Your email</Label>

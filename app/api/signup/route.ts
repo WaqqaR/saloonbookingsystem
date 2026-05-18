@@ -6,6 +6,7 @@ import { getStripe, stripeEnabled } from "@/lib/stripe";
 import { tenantUrl, appUrl } from "@/lib/tenant";
 import { addDays } from "date-fns";
 import { BUSINESS_TYPES } from "@/lib/treatments";
+import { isValidTimezone } from "@/lib/locales";
 
 const schema = z.object({
   shopName: z.string().min(2).max(80),
@@ -13,6 +14,9 @@ const schema = z.object({
   businessType: z.enum(BUSINESS_TYPES.map((b) => b.value) as [string, ...string[]]).optional(),
   email: z.string().email(),
   password: z.string().min(8).max(128),
+  locale: z.string().regex(/^[a-z]{2}-[A-Z]{2}$/).optional(),
+  timezone: z.string().min(1).max(64).refine(isValidTimezone, "Invalid timezone").optional(),
+  currency: z.string().regex(/^[A-Z]{3}$/).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -21,7 +25,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
-  const { shopName, slug, businessType, email, password } = parsed.data;
+  const { shopName, slug, businessType, email, password, locale, timezone, currency } = parsed.data;
 
   if (!isValidSlug(slug)) {
     return NextResponse.json({ error: "Invalid or reserved subdomain" }, { status: 400 });
@@ -42,6 +46,9 @@ export async function POST(req: NextRequest) {
       name: shopName,
       businessType: businessType ?? null,
       email: email.toLowerCase(),
+      ...(locale ? { defaultLocale: locale } : {}),
+      ...(timezone ? { timezone } : {}),
+      ...(currency ? { currency } : {}),
       subscriptionStatus: "trialing",
       seatCount: 1,
       trialEndsAt: addDays(new Date(), trialDays),

@@ -1,4 +1,5 @@
 import { requireTenantAdmin } from "@/lib/admin-guard";
+import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { SettingsForm } from "./SettingsForm";
 
@@ -7,15 +8,16 @@ export const dynamic = "force-dynamic";
 export default async function SettingsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { tenant } = await requireTenantAdmin(slug);
+  const t = await getTranslations("admin.settings");
 
   return (
     <div className="p-6 max-w-3xl space-y-6">
-      <h1 className="font-display text-3xl font-medium mb-2">Settings</h1>
+      <h1 className="font-display text-3xl font-medium mb-2">{t("title")}</h1>
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-display text-xl">Studio details</CardTitle>
-          <CardDescription>How customers see your business.</CardDescription>
+          <CardTitle className="font-display text-xl">{t("studioDetails")}</CardTitle>
+          <CardDescription>{t("studioDetailsDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           <SettingsForm

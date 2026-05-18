@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenantAdmin } from "@/lib/admin-guard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { getTranslations } from "next-intl/server";
 import { HoursEditor } from "./HoursEditor";
 import { BlockedTimes } from "./BlockedTimes";
 
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function AvailabilityAdmin({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { tenant } = await requireTenantAdmin(slug);
+  const t = await getTranslations("admin.availability");
 
   let hours = await prisma.businessHours.findMany({ where: { tenantId: tenant.id }, orderBy: { dayOfWeek: "asc" } });
   if (hours.length === 0) {
@@ -23,12 +25,12 @@ export default async function AvailabilityAdmin({ params }: { params: Promise<{ 
 
   return (
     <div className="p-6 max-w-4xl space-y-6">
-      <h1 className="text-2xl font-bold">Hours & Blocks</h1>
+      <h1 className="text-2xl font-bold">{t("title")}</h1>
 
       <Card>
         <CardHeader>
-          <CardTitle>Shop hours</CardTitle>
-          <CardDescription>Default hours for the whole shop. Individual staff can override.</CardDescription>
+          <CardTitle>{t("shopHoursTitle")}</CardTitle>
+          <CardDescription>{t("shopHoursDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <HoursEditor initial={hours} />
@@ -37,8 +39,8 @@ export default async function AvailabilityAdmin({ params }: { params: Promise<{ 
 
       <Card>
         <CardHeader>
-          <CardTitle>Blocked times</CardTitle>
-          <CardDescription>Vacations, holidays, training, etc.</CardDescription>
+          <CardTitle>{t("blockedTitle")}</CardTitle>
+          <CardDescription>{t("blockedDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <BlockedTimes initial={blocked} />

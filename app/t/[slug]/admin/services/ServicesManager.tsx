@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +35,8 @@ function currencySymbolOf(code: string) {
 }
 
 export function ServicesManager({ initial, currency, businessType }: { initial: Service[]; currency: string; businessType: string | null }) {
+  const t = useTranslations("admin.services");
+  const c = useTranslations("admin.common");
   const [items, setItems] = useState(initial);
   const [editing, setEditing] = useState<Partial<Service> | null>(null);
   const [open, setOpen] = useState(false);
@@ -120,7 +123,7 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this service?")) return;
+    if (!confirm(t("confirmDelete"))) return;
     const res = await fetch(`/api/admin/services/${id}`, { method: "DELETE" });
     if (res.ok) setItems(items.filter((i) => i.id !== id));
   }
@@ -131,7 +134,7 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
         <div className="mb-5 p-4 bg-accent/5 border border-accent/20 rounded-md">
           <div className="flex items-center gap-2 mb-3 text-sm font-medium">
             <Sparkles className="w-4 h-4 text-accent" />
-            Suggested treatments — click to add
+            {t("suggestedTreatments")}
           </div>
           <div className="flex flex-wrap gap-2">
             {unusedSuggestions.map((t) => (
@@ -142,7 +145,7 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
                 className="text-xs px-3 py-1.5 rounded-full border border-border bg-card hover:border-accent hover:bg-accent/10 transition-colors"
               >
                 {t.name}
-                <span className="text-muted-foreground ml-2">
+                <span className="text-muted-foreground ms-2">
                   {formatDuration(t.durationMinutes)} · {formatPrice(t.priceCents, currency)}
                 </span>
               </button>
@@ -152,20 +155,24 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
       )}
       {!businessType && (
         <p className="mb-4 text-xs text-muted-foreground">
-          Set your business type in <a className="underline" href="../settings">Settings</a> to get treatment suggestions.
+          {t.rich("setBusinessTypeHint", {
+            settings: (chunks) => (
+              <a className="underline" href="../settings">{chunks}</a>
+            ),
+          })}
         </p>
       )}
       <div className="flex justify-end mb-4">
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditing(null); setPriceText(""); setDepositText(""); } }}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditing(empty)}><Plus className="w-4 h-4" /> Add service</Button>
+            <Button onClick={() => setEditing(empty)}><Plus className="w-4 h-4" /> {t("addService")}</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>{editing?.id ? "Edit service" : "New service"}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editing?.id ? t("editService") : t("newService")}</DialogTitle></DialogHeader>
             {editing && (
               <div className="space-y-3">
                 <div className="relative">
-                  <Label>Name</Label>
+                  <Label>{t("nameLabel")}</Label>
                   <Input
                     value={editing.name || ""}
                     onChange={(e) => setEditing({ ...editing, name: e.target.value })}
@@ -174,13 +181,13 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
                     autoComplete="off"
                   />
                   {matchingSuggestions.length > 0 && (
-                    <div className="absolute z-50 left-0 right-0 mt-1 max-h-64 overflow-auto rounded-md border border-border bg-card shadow-lg">
+                    <div className="absolute z-50 start-0 end-0 mt-1 max-h-64 overflow-auto rounded-md border border-border bg-card shadow-lg">
                       {matchingSuggestions.map((t) => (
                         <button
                           key={t.name}
                           type="button"
                           onMouseDown={(e) => { e.preventDefault(); fillFromSuggestion(t); }}
-                          className="w-full text-left px-3 py-2 hover:bg-accent/10 border-b last:border-b-0 border-border/40"
+                          className="w-full text-start px-3 py-2 hover:bg-accent/10 border-b last:border-b-0 border-border/40"
                         >
                           <div className="text-sm font-medium">{t.name}</div>
                           <div className="text-xs text-muted-foreground line-clamp-2">{t.description}</div>
@@ -190,15 +197,15 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
                     </div>
                   )}
                 </div>
-                <div><Label>Description</Label><Textarea value={editing.description || ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} /></div>
+                <div><Label>{t("descriptionLabel")}</Label><Textarea value={editing.description || ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} /></div>
                 <div className="grid grid-cols-3 gap-3">
-                  <div><Label>Duration (min)</Label><Input type="number" value={editing.durationMinutes || 0} onChange={(e) => setEditing({ ...editing, durationMinutes: Number(e.target.value) })} /></div>
+                  <div><Label>{t("durationLabel")}</Label><Input type="number" value={editing.durationMinutes || 0} onChange={(e) => setEditing({ ...editing, durationMinutes: Number(e.target.value) })} /></div>
                   <div>
-                    <Label>Price</Label>
+                    <Label>{t("priceLabel")}</Label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">{currencySymbol}</span>
+                      <span className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">{currencySymbol}</span>
                       <Input
-                        className="pl-7"
+                        className="ps-7"
                         inputMode="decimal"
                         value={priceText}
                         onChange={(e) => {
@@ -215,15 +222,15 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
                       />
                     </div>
                   </div>
-                  <div><Label>Category</Label><Input value={editing.category || ""} onChange={(e) => setEditing({ ...editing, category: e.target.value })} /></div>
+                  <div><Label>{t("categoryLabel")}</Label><Input value={editing.category || ""} onChange={(e) => setEditing({ ...editing, category: e.target.value })} /></div>
                 </div>
                 <div className="border-t pt-3">
-                  <Label className="block mb-2">Payment at booking</Label>
+                  <Label className="block mb-2">{t("paymentAtBooking")}</Label>
                   <div className="grid grid-cols-3 gap-2 text-sm">
                     {[
-                      { value: "none", label: "None" },
-                      { value: "deposit", label: "Deposit" },
-                      { value: "full", label: "Full" },
+                      { value: "none", label: t("paymentModeNone") },
+                      { value: "deposit", label: t("paymentModeDeposit") },
+                      { value: "full", label: t("paymentModeFull") },
                     ].map((opt) => (
                       <label key={opt.value} className={`p-2 border rounded cursor-pointer text-center ${editing.paymentMode === opt.value ? "border-accent bg-accent/5" : "border-border hover:border-accent/50"}`}>
                         <input type="radio" name="paymentMode" value={opt.value} checked={editing.paymentMode === opt.value} onChange={() => setEditing({ ...editing, paymentMode: opt.value })} className="sr-only" />
@@ -233,11 +240,11 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
                   </div>
                   {editing.paymentMode === "deposit" && (
                     <div className="mt-3">
-                      <Label>Deposit amount</Label>
+                      <Label>{t("depositAmount")}</Label>
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">{currencySymbol}</span>
+                        <span className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">{currencySymbol}</span>
                         <Input
-                          className="pl-7"
+                          className="ps-7"
                           inputMode="decimal"
                           value={depositText}
                           onChange={(e) => {
@@ -255,13 +262,13 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
                       </div>
                     </div>
                   )}
-                  <p className="text-xs text-muted-foreground mt-2">Requires Stripe Connect to be set up.</p>
+                  <p className="text-xs text-muted-foreground mt-2">{t("stripeConnectNote")}</p>
                 </div>
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={editing.active ?? true} onChange={(e) => setEditing({ ...editing, active: e.target.checked })} />
-                  Active (visible to customers)
+                  {t("activeLabel")}
                 </label>
-                <div className="flex justify-end"><Button onClick={save}>Save</Button></div>
+                <div className="flex justify-end"><Button onClick={save}>{c("save")}</Button></div>
               </div>
             )}
           </DialogContent>
@@ -269,8 +276,8 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
       </div>
 
       <table className="w-full text-sm">
-        <thead className="text-left text-xs uppercase text-muted-foreground border-b">
-          <tr><th className="p-2">Name</th><th className="p-2">Duration</th><th className="p-2">Price</th><th className="p-2">Category</th><th className="p-2">Status</th><th></th></tr>
+        <thead className="text-start text-xs uppercase text-muted-foreground border-b">
+          <tr><th className="p-2">{t("colName")}</th><th className="p-2">{t("colDuration")}</th><th className="p-2">{t("colPrice")}</th><th className="p-2">{t("colCategory")}</th><th className="p-2">{t("colStatus")}</th><th></th></tr>
         </thead>
         <tbody className="divide-y">
           {items.map((s) => (
@@ -279,10 +286,10 @@ export function ServicesManager({ initial, currency, businessType }: { initial: 
               <td className="p-2">{formatDuration(s.durationMinutes)}</td>
               <td className="p-2">{formatPrice(s.priceCents, currency)}</td>
               <td className="p-2">{s.category}</td>
-              <td className="p-2"><Badge variant={s.active ? "success" : "secondary"}>{s.active ? "Active" : "Hidden"}</Badge></td>
-              <td className="p-2 text-right">
-                <Button size="sm" variant="ghost" onClick={() => { setEditing(s); setOpen(true); }}><Pencil className="w-3 h-3" /></Button>
-                <Button size="sm" variant="ghost" onClick={() => remove(s.id)}><Trash2 className="w-3 h-3" /></Button>
+              <td className="p-2"><Badge variant={s.active ? "success" : "secondary"}>{s.active ? t("statusActive") : t("statusHidden")}</Badge></td>
+              <td className="p-2 text-end">
+                <Button size="sm" variant="ghost" aria-label={c("edit")} onClick={() => { setEditing(s); setOpen(true); }}><Pencil className="w-3 h-3" /></Button>
+                <Button size="sm" variant="ghost" aria-label={c("delete")} onClick={() => remove(s.id)}><Trash2 className="w-3 h-3" /></Button>
               </td>
             </tr>
           ))}

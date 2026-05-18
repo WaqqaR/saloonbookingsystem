@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenantAdmin } from "@/lib/admin-guard";
 import { startOfDay, endOfDay, addDays, startOfWeek, format } from "date-fns";
+import { getTranslations } from "next-intl/server";
 import { CalendarView } from "./CalendarView";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,7 @@ export default async function CalendarPage({
   const { slug } = await params;
   const sp = await searchParams;
   const { tenant } = await requireTenantAdmin(slug);
+  const t = await getTranslations("admin.calendar");
 
   const view = sp.view === "week" ? "week" : "day";
   const baseDate = sp.date ? new Date(sp.date) : new Date();
@@ -53,10 +55,12 @@ export default async function CalendarPage({
 
   return (
     <div className="p-6 max-w-[1400px]">
-      <h1 className="font-display text-3xl font-medium mb-6">Diary</h1>
+      <h1 className="font-display text-3xl font-medium mb-6">{t("title")}</h1>
       <CalendarView
         view={view}
         baseDateISO={format(baseDate, "yyyy-MM-dd")}
+        defaultLocale={tenant.defaultLocale}
+        timezone={tenant.timezone}
         staff={staff.map((s) => ({ id: s.id, name: s.name, color: s.color || "#888" }))}
         hours={hours.map((h) => ({ dayOfWeek: h.dayOfWeek, open: h.open, openTime: h.openTime, closeTime: h.closeTime }))}
         bookings={bookings.map((b) => ({

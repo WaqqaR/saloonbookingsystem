@@ -5,6 +5,7 @@ import { PaymentsActions } from "./PaymentsActions";
 import { refreshConnectStatus } from "@/lib/connect";
 import { stripeEnabled } from "@/lib/stripe";
 import { CreditCard, CheckCircle2, AlertTriangle } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export default async function PaymentsPage({
   const { slug } = await params;
   const sp = await searchParams;
   const { tenant } = await requireTenantAdmin(slug);
+  const t = await getTranslations("admin.payments");
 
   // If returning from Stripe onboarding, refresh status.
   if (sp.onboarded || sp.refresh) {
@@ -32,9 +34,9 @@ export default async function PaymentsPage({
   return (
     <div className="p-6 max-w-3xl space-y-6">
       <div>
-        <h1 className="font-display text-3xl font-medium mb-2">Customer payments</h1>
+        <h1 className="font-display text-3xl font-medium mb-2">{t("title")}</h1>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Collect deposits or full payment from customers when they book. Money goes directly to your Stripe account.
+          {t("intro")}
         </p>
       </div>
 
@@ -43,9 +45,9 @@ export default async function PaymentsPage({
           <CardContent className="p-4 text-sm flex items-start gap-3">
             <AlertTriangle className="w-4 h-4 mt-0.5 text-amber-700" />
             <div>
-              <p className="font-medium text-amber-900">Stripe not configured</p>
+              <p className="font-medium text-amber-900">{t("notConfiguredTitle")}</p>
               <p className="text-amber-800 mt-1">
-                Payments are disabled because <code>STRIPE_SECRET_KEY</code> is not set in this environment.
+                {t.rich("notConfiguredDesc", { secret: () => <code>STRIPE_SECRET_KEY</code> })}
               </p>
             </div>
           </CardContent>
@@ -56,21 +58,21 @@ export default async function PaymentsPage({
         <div className="gold-rule" />
         <CardHeader>
           <CardTitle className="font-display text-xl flex items-center gap-2">
-            <CreditCard className="w-4 h-4 text-accent" /> Stripe account
+            <CreditCard className="w-4 h-4 text-accent" /> {t("stripeAccount")}
           </CardTitle>
           <CardDescription>
-            We use Stripe Connect — money lands in your Stripe account directly, with payouts to your bank.
+            {t("stripeAccountDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Connection</span>
+            <span className="text-muted-foreground">{t("connection")}</span>
             {charges ? (
-              <Badge variant="success" className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Connected & taking payments</Badge>
+              <Badge variant="success" className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> {t("connected")}</Badge>
             ) : hasAccount ? (
-              <Badge variant="secondary">Onboarding incomplete</Badge>
+              <Badge variant="secondary">{t("onboardingIncomplete")}</Badge>
             ) : (
-              <Badge variant="outline">Not connected</Badge>
+              <Badge variant="outline">{t("notConnected")}</Badge>
             )}
           </div>
 
@@ -80,13 +82,13 @@ export default async function PaymentsPage({
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-display text-xl">How payments work</CardTitle>
+          <CardTitle className="font-display text-xl">{t("howItWorks")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground leading-relaxed">
-          <p>1. Connect your Stripe account (one-time, takes about 2 minutes).</p>
-          <p>2. On each service, choose how you&apos;d like to collect payment: nothing, a deposit, or the full amount.</p>
-          <p>3. Customers are taken to Stripe&apos;s secure checkout when they book a service that requires payment. Their booking is held for 30 minutes until they pay.</p>
-          <p>4. Confirmed bookings appear in your dashboard. Refunds, disputes, and payouts are managed in your Stripe dashboard.</p>
+          <p>{t("step1")}</p>
+          <p>{t("step2")}</p>
+          <p>{t("step3")}</p>
+          <p>{t("step4")}</p>
         </CardContent>
       </Card>
     </div>
