@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { isBusinessType } from "@/lib/treatments";
+import { isValidTimezone } from "@/lib/locales";
 import { invalidateLocaleCache } from "@/i18n/request";
 
 export async function PUT(req: NextRequest) {
@@ -12,6 +13,14 @@ export async function PUT(req: NextRequest) {
   // tenant's existing locale untouched rather than clobbering it with a default.
   const localeValid =
     typeof data.locale === "string" && /^[a-z]{2}-[A-Z]{2}$/.test(data.locale);
+  // Same philosophy as locale: only accept a well-formed timezone/currency,
+  // otherwise leave the tenant's existing value untouched rather than
+  // clobbering it with a default.
+  const timezoneValid =
+    typeof data.timezone === "string" && isValidTimezone(data.timezone);
+  const currency =
+    typeof data.currency === "string" ? data.currency.toUpperCase() : "";
+  const currencyValid = /^[A-Z]{3}$/.test(currency);
   const tenant = await prisma.tenant.update({
     where: { id: session.tenantId },
     data: {
@@ -19,8 +28,8 @@ export async function PUT(req: NextRequest) {
       email: data.email,
       phone: data.phone || null,
       ...(localeValid ? { defaultLocale: data.locale } : {}),
-      timezone: data.timezone || "Europe/London",
-      currency: (data.currency || "GBP").toUpperCase(),
+      ...(timezoneValid ? { timezone: data.timezone } : {}),
+      ...(currencyValid ? { currency } : {}),
       businessType: isBusinessType(data.businessType) ? data.businessType : null,
       cancellationWindowHours: Math.max(0, Math.min(168, Number(data.cancellationWindowHours ?? 24))),
       noShowFeePercent: Math.max(0, Math.min(100, Number(data.noShowFeePercent ?? 100))),

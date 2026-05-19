@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BUSINESS_TYPES } from "@/lib/treatments";
-import { LOCALES } from "@/lib/locales";
+import { LOCALES, CURRENCIES, COMMON_TIMEZONES } from "@/lib/locales";
+
+const SELECT_CLASS =
+  "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring";
 
 type Settings = {
   name: string;
@@ -30,11 +33,17 @@ export function SettingsForm({ initial }: { initial: Settings }) {
   const [s, setS] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  // Keep the tenant's current locale selectable even if it isn't one of the
+  // Keep the tenant's current value selectable even if it isn't one of the
   // curated options (e.g. it was detected from the browser at signup).
   const localeOptions = LOCALES.some((l) => l.value === s.locale)
     ? LOCALES
     : [{ value: s.locale, label: s.locale }, ...LOCALES];
+  const tzOptions = COMMON_TIMEZONES.includes(s.timezone)
+    ? COMMON_TIMEZONES
+    : [s.timezone, ...COMMON_TIMEZONES];
+  const currencyOptions = CURRENCIES.some((cur) => cur.value === s.currency)
+    ? CURRENCIES
+    : [{ value: s.currency, label: s.currency }, ...CURRENCIES];
 
   async function save() {
     setSaving(true);
@@ -65,18 +74,34 @@ export function SettingsForm({ initial }: { initial: Settings }) {
         </div>
         <div>
           <Label>{t("timezone")}</Label>
-          <Input value={s.timezone} onChange={(e) => { setS({ ...s, timezone: e.target.value }); setSaved(false); }} placeholder="Europe/London" />
+          <select
+            value={s.timezone}
+            onChange={(e) => { setS({ ...s, timezone: e.target.value }); setSaved(false); }}
+            className={SELECT_CLASS}
+          >
+            {tzOptions.map((tz) => (
+              <option key={tz} value={tz}>{tz}</option>
+            ))}
+          </select>
         </div>
         <div>
           <Label>{t("currency")}</Label>
-          <Input value={s.currency} onChange={(e) => { setS({ ...s, currency: e.target.value.toUpperCase() }); setSaved(false); }} placeholder="GBP" />
+          <select
+            value={s.currency}
+            onChange={(e) => { setS({ ...s, currency: e.target.value }); setSaved(false); }}
+            className={SELECT_CLASS}
+          >
+            {currencyOptions.map((cur) => (
+              <option key={cur.value} value={cur.value}>{cur.label}</option>
+            ))}
+          </select>
         </div>
         <div className="sm:col-span-2">
           <Label>{t("language")}</Label>
           <select
             value={s.locale}
             onChange={(e) => { setS({ ...s, locale: e.target.value }); setSaved(false); }}
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            className={SELECT_CLASS}
           >
             {localeOptions.map((l) => (
               <option key={l.value} value={l.value}>{l.label}</option>
@@ -89,7 +114,7 @@ export function SettingsForm({ initial }: { initial: Settings }) {
           <select
             value={s.businessType}
             onChange={(e) => { setS({ ...s, businessType: e.target.value }); setSaved(false); }}
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            className={SELECT_CLASS}
           >
             <option value="">{c("selectPlaceholder")}</option>
             {BUSINESS_TYPES.map((b) => (
