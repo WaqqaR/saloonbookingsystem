@@ -3,6 +3,22 @@ import { tenantUrl } from "./tenant";
 import { formatInTenantTz } from "./datetime";
 import { getServerTranslator } from "./i18n";
 
+/**
+ * Master switch for SMS reminders & confirmations.
+ * Disabled for the initial launch (May 2026). To re-enable:
+ *   1. flip this to `true`
+ *   2. restore the SMS checkbox in app/t/[slug]/admin/settings/SettingsForm.tsx
+ *   3. add "sms" back to the channels array in BookingsTable.sendReminder
+ */
+export const SMS_FEATURE_ENABLED = false;
+
+type SmsResult = {
+  sent: boolean;
+  stubbed?: boolean;
+  disabled?: boolean;
+  error?: string;
+};
+
 let _client: any | null | undefined;
 
 async function getClient() {
@@ -16,7 +32,8 @@ async function getClient() {
 }
 
 export function smsEnabled() {
-  return Boolean(process.env.TWILIO_ACCOUNT_SID) &&
+  return SMS_FEATURE_ENABLED &&
+         Boolean(process.env.TWILIO_ACCOUNT_SID) &&
          Boolean(process.env.TWILIO_AUTH_TOKEN) &&
          Boolean(process.env.TWILIO_FROM_NUMBER);
 }
@@ -36,7 +53,8 @@ async function manageLink(b: BookingForSms): Promise<string> {
   return tenantUrl(b.tenant.slug, `/manage?t=${encodeURIComponent(token)}`);
 }
 
-export async function sendBookingReminderSms(b: BookingForSms) {
+export async function sendBookingReminderSms(b: BookingForSms): Promise<SmsResult> {
+  if (!SMS_FEATURE_ENABLED) return { sent: false, disabled: true };
   const ts = await getServerTranslator(b.tenant.defaultLocale, "sms");
   const when = formatInTenantTz(b.startTime, b.tenant, "short");
   const link = await manageLink(b);
@@ -51,7 +69,8 @@ export async function sendBookingReminderSms(b: BookingForSms) {
   return await send(b.customerPhone, body);
 }
 
-export async function sendBookingConfirmationSms(b: BookingForSms) {
+export async function sendBookingConfirmationSms(b: BookingForSms): Promise<SmsResult> {
+  if (!SMS_FEATURE_ENABLED) return { sent: false, disabled: true };
   const ts = await getServerTranslator(b.tenant.defaultLocale, "sms");
   const when = formatInTenantTz(b.startTime, b.tenant, "short");
   const link = await manageLink(b);
@@ -64,7 +83,7 @@ export async function sendBookingConfirmationSms(b: BookingForSms) {
   return await send(b.customerPhone, body);
 }
 
-async function send(to: string, body: string) {
+async function send(to: string, body: string): Promise<SmsResult> {
   const client = await getClient();
   if (!client) {
     console.log(`[sms-stub] Would send -> ${to}: ${body}`);

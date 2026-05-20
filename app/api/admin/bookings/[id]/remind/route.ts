@@ -31,7 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (r.sent || r.stubbed) {
         await prisma.booking.update({ where: { id }, data: { smsReminderSent: true } });
       }
-      results.sms = r.sent ? "sent" : r.stubbed ? "stubbed (no Twilio key)" : `failed: ${r.error}`;
+      results.sms = r.sent ? "sent" : r.disabled ? "disabled" : r.stubbed ? "stubbed (no Twilio key)" : `failed: ${r.error}`;
     } catch (e: any) { results.sms = `failed: ${e.message}`; }
   }
 

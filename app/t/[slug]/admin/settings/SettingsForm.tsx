@@ -156,14 +156,7 @@ export function SettingsForm({ initial }: { initial: Settings }) {
               <div className="text-xs text-muted-foreground">{t("emailRemindersDesc")}</div>
             </div>
           </label>
-          <label className="flex items-start gap-3 p-3 border rounded cursor-pointer hover:border-accent/50">
-            <input type="checkbox" className="mt-0.5" checked={s.smsRemindersEnabled}
-              onChange={(e) => { setS({ ...s, smsRemindersEnabled: e.target.checked }); setSaved(false); }} />
-            <div>
-              <div className="font-medium">{t("smsReminders")}</div>
-              <div className="text-xs text-muted-foreground">{t("smsRemindersDesc")}</div>
-            </div>
-          </label>
+          {/* SMS reminders disabled for launch — see SMS_FEATURE_ENABLED in lib/sms.ts */}
           <div className="grid sm:grid-cols-2 gap-4 pt-2">
             <div>
               <Label>{t("reminderHours")}</Label>

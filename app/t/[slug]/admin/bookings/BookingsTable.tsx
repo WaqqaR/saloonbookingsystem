@@ -56,7 +56,7 @@ export function BookingsTable({
     const res = await fetch(`/api/admin/bookings/${id}/remind`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channels: ["email", "sms"] }),
+      body: JSON.stringify({ channels: ["email"] }),
     });
     setBusy(null);
     if (res.ok) {
